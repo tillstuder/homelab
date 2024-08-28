@@ -1,0 +1,74 @@
+---
+- name: Validate VM ID is not already in use
+  ansible.builtin.fail:
+    msg: "VM ID {{ template.key }} is already in use by a VM that is not a template."
+  when: template.key in existing_vms | json_query('[].vmid') and existing_vms | json_query(query) != [1]
+  vars:
+    query: "[?vmid == `{{ template.key }}`].template"
+
+- name: Create template if not exists
+  when: >-
+    template.key not in existing_vms | json_query('[].vmid')
+  block:
+    - name: Create a new VM
+      ansible.builtin.command: >
+        pvesh create /nodes/{{ ansible_facts.hostname }}/qemu --vmid {{ template.key }}
+      changed_when: true
+
+    - name: Get cloudimg {{ template.value.cloud_image_url }}
+      ansible.builtin.get_url:
+        url: "{{ template.value.cloud_image_url }}"
+        dest: /tmp
+        mode: 0755
+      register: downloaded_image
+
+    - name: Import the downloaded disk
+      ansible.builtin.command: qm importdisk {{ template.key }} {{ downloaded_image.dest }} {{ template.value.storage }}
+      changed_when: true
+
+    - name: Get VM configuration
+      ansible.builtin.command: >
+        pvesh get /nodes/{{ ansible_facts.hostname }}/qemu/{{ template.key }}/config --output-format json
+      register: current_template_config
+      changed_when: false
+
+    - name: Update VM configuration
+      vars:
+        network_devices: "{{ template.value.network_devices | \
+          default({'net0':{'type': 'virtio', 'bridge': 'vmbr0'}}) | dict2items }}"
+        network_devices_cfg: "{% for netdev in network_devices %}
+          --{{ netdev.key }} {{ netdev.value.type | default(proxmox_template_defaults.netdev_type) }}\
+          {{ '=' + netdev.value.mac if netdev.value.mac is defined else '' }},\
+          bridge={{ netdev.value.bridge | default(proxmox_template_defaults.netdev_bridge) }},\
+          firewall={{ netdev.value.firewall | default(proxmox_template_defaults.netdev_firewall) | ternary(1, 0) }},\
+          {{ ',tag=' + netdev.value.vlan_tag | string if netdev.value.vlan_tag is defined else '' }}
+          {% endfor %}"
+      ansible.builtin.command: >
+        pvesh create /nodes/{{ ansible_facts.hostname }}/qemu/{{ template.key }}/config
+        --name {{ template.value.name }}
+        --bios {{ template.value.bios | default(proxmox_template_defaults.bios) }}
+        --agent {{ template.value.agent | default(proxmox_template_defaults.agent) }}
+        --cores {{ template.value.cores | default(proxmox_template_defaults.cores) }}
+        --cpu {{ template.value.cpu | default(proxmox_template_defaults.cpu) }}
+        --machine {{ template.value.machine | default(proxmox_template_defaults.machine) }}
+        --memory {{ template.value.memory | default(proxmox_template_defaults.memory) }}
+        --ostype {{ template.value.ostype | default(proxmox_template_defaults.ostype) }}
+        --scsihw {{ template.value.scsihw | default(proxmox_template_defaults.scsihw) }}
+        --sockets {{ template.value.sockets | default(proxmox_template_defaults.sockets) }}
+        --scsi0 {{ current_template_config.stdout | from_json | json_query('unused0') }},cache=writeback,discard=on,ssd=1
+        --ide0 {{ template.value.storage }}:cloudinit
+        --boot order=scsi0
+        --ciuser {{ template.value.ciuser | default(proxmox_template_defaults.ciuser) }}
+        --cipassword {{ template.value.cipassword | default(proxmox_template_defaults.cipassword) }}
+        --sshkeys {{ template.value.sshkeys | default(proxmox_template_defaults.sshkeys) | urlencode | replace('/', '%2F') }}
+        --vga {{ template.value.vga | default(proxmox_template_defaults.vga) }}
+        {% if 'ovmf' in template.value.bios | default(proxmox_template_defaults.bios) %}
+        --efidisk0 {{ template.value.storage }}:1,efitype=4m,pre-enrolled-keys=1
+        --tpmstate0 {{ template.value.storage }}:1,version=v2.0
+        {% endif %}
+        {{ network_devices_cfg }}
+      changed_when: true
+
+    - name: Convert VM into a template
+      ansible.builtin.command: pvesh create /nodes/{{ ansible_facts.hostname }}/qemu/{{ template.key }}/template
+      changed_when: true

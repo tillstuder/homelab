@@ -1,0 +1,31 @@
+---
+- name: Remove pve-enterprise repository
+  ansible.builtin.apt_repository:
+    repo: deb https://enterprise.proxmox.com/debian/pve {{ ansible_facts['distribution_release'] }} pve-enterprise
+    state: absent
+    validate_certs: false
+    update_cache: false
+    filename: pve-enterprise
+
+- name: Remove ceph-quincy repository
+  ansible.builtin.apt_repository:
+    repo: deb https://enterprise.proxmox.com/debian/ceph-quincy {{ ansible_facts['distribution_release'] }} enterprise
+    state: absent
+    validate_certs: false
+    update_cache: false
+    filename: ceph-quincy
+
+- name: Remove ceph-reef repository
+  ansible.builtin.apt_repository:
+    repo: deb https://enterprise.proxmox.com/debian/ceph-reef {{ ansible_facts['distribution_release'] }} enterprise
+    state: absent
+    validate_certs: false
+    update_cache: false
+    filename: ceph-reef
+
+- name: Add pve-no-subscription repository
+  ansible.builtin.apt_repository:
+    repo: deb http://download.proxmox.com/debian/pve {{ ansible_facts['distribution_release'] }} pve-no-subscription
+    state: present
+    update_cache: true
+    filename: pve-no-subscription

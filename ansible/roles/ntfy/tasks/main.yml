@@ -1,0 +1,7 @@
+---
+# Original Source: https://github.com/binwiederhier/ntfy-ansible
+- name: ntfy tasks # noqa: name[casing]
+  ansible.builtin.include_tasks: ntfy.yml
+  args:
+    apply:
+      become: true

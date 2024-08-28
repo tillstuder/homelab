@@ -1,0 +1,13 @@
+---
+- name: Full Update and Upgrade of OS
+  ansible.builtin.include_tasks: update.yml
+
+- name: Rebooting if needed
+  ansible.builtin.import_tasks:
+    file: reboot.yml
+  when:
+    - reboot_required is defined
+    - reboot_required.stat.exists
+
+- name: Configuring unattended-upgrades
+  ansible.builtin.include_tasks: unattended-upgrades.yml

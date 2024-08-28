@@ -1,0 +1,17 @@
+[Unit]
+Description=Homer Dashboard
+After=network.target
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=2s
+TimeoutStartSec=0
+User={{ homer_user }}
+Group={{ homer_group }}
+WorkingDirectory={{ homer_data_dir }}
+ExecStart=python3 -m http.server {{ homer_port }}
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+---
+ntfy_version: 2.11.0
+ntfy_user: ntfy
+ntfy_group: ntfy
+ntfy_daemon: ntfy
+ntfy_home_dir: /var/lib/ntfy
+ntfy_bin_file: /usr/bin/ntfy
+
+ntfy_domain: "{{ ansible_facts['default_ipv4']['address'] }}"
+ntfy_config_file: /etc/ntfy/server.yml

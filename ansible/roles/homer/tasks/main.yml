@@ -1,0 +1,6 @@
+---
+- name: homer tasks # noqa: name[casing]
+  ansible.builtin.include_tasks: homer.yml
+  args:
+    apply:
+      become: true

@@ -1,0 +1,26 @@
+---
+homer_user: homer
+homer_group: homer
+homer_daemon: homer
+homer_home_dir: /var/lib/homer
+
+homer_data_dir: /opt/homer
+homer_zip_file: "{{ homer_data_dir }}/homer.zip"
+homer_zip_url: https://github.com/bastienwirtz/homer/releases/latest/download/homer.zip
+homer_config_file: "{{ homer_data_dir }}/assets/config.yml"
+homer_port: 80
+
+homer_url_idrac: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_IDRAC') }}/restgui/start.html
+homer_url_pve1: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_PVE1') }}:8006/
+homer_url_pve2: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_PVE2') }}:8006/
+homer_url_synology: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_SYNOLOGY') }}:5001/
+homer_url_supermicro: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_SUPERMICRO') }}
+homer_url_fractal: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_FRACTAL') }}
+
+homer_url_homer: http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_HOMER') }}
+homer_url_adguardhome: http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_ADGUARDHOME') }}
+homer_url_ntfy: http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_NTFY') }}
+homer_url_gatus: http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_GATUS') }}
+
+homer_url_purplelab_opnsense: https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_PURPLELAB') }}/index.php
+homer_url_purplelab_kibana1: http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_PURPLELAB') }}:5601/login

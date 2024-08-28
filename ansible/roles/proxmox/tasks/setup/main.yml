@@ -1,0 +1,9 @@
+---
+- name: Switch to Community APT repo
+  ansible.builtin.import_tasks: community_apt_repo.yml
+
+- name: Update Proxmox
+  ansible.builtin.import_tasks: update.yml
+
+- name: Disable Proxmox Subscription prompt
+  ansible.builtin.import_tasks: subscription_prompt.yml

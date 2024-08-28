@@ -1,0 +1,69 @@
+---
+- name: Ensure homer group exists.
+  ansible.builtin.group:
+    name: "{{ homer_group }}"
+    state: present
+    system: true
+
+- name: Ensure homer user exists.
+  ansible.builtin.user:
+    name: "{{ homer_user }}"
+    group: "{{ homer_group }}"
+    home: "{{ homer_home_dir }}"
+    shell: /usr/sbin/nologin
+    system: true
+
+- name: Install required packages
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - unzip
+    - python3
+
+- name: Create homer data directory
+  ansible.builtin.file:
+    state: directory
+    path: "{{ homer_data_dir }}"
+    owner: "{{ homer_user }}"
+    group: "{{ homer_group }}"
+    mode: "0755"
+
+- name: Download homer zip file
+  ansible.builtin.get_url:
+    url: "{{ homer_zip_url }}"
+    dest: "{{ homer_zip_file }}"
+    mode: "0755"
+  register: __homer_download
+  until: __homer_download is succeeded
+  retries: 3
+  delay: 5
+  failed_when: __homer_download is failed
+
+- name: Unzip homer zip file
+  ansible.builtin.unarchive:
+    src: "{{ homer_zip_file }}"
+    dest: "{{ homer_data_dir }}"
+    owner: "{{ homer_user }}"
+    group: "{{ homer_group }}"
+    mode: "0755"
+    remote_src: true
+  register: __homer_unzip
+  until: __homer_unzip is succeeded
+  retries: 3
+  delay: 5
+  failed_when: __homer_unzip is failed
+
+- name: Delete homer zip file
+  ansible.builtin.file:
+    path: "{{ homer_zip_file }}"
+    state: absent
+
+- name: Copy default config file
+  ansible.builtin.copy:
+    src: "{{ homer_data_dir }}/assets/config.yml.dist"
+    dest: "{{ homer_config_file }}"
+    owner: "{{ homer_user }}"
+    group: "{{ homer_group }}"
+    mode: "0644"
+    remote_src: true

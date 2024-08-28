@@ -1,0 +1,6 @@
+---
+- name: Update storages
+  ansible.builtin.include_tasks: update_storage.yml
+  with_items: "{{ proxmox_storage | dict2items }}"
+  loop_control:
+    loop_var: storage_config

@@ -1,0 +1,5 @@
+---
+tailscale_api_key: "{{ lookup('env', 'ANSIBLE_TAILSCALE_API_TOKEN_SECRET') }}"
+tailscale_tailnet: "{{ lookup('env', 'ANSIBLE_TAILSCALE_TAILNET') }}"
+tailscale_routes: ["{{ lookup('env', 'NETWORK_WITH_CIDR') }}"]
+tailscale_exit_node: true

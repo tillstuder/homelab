@@ -1,0 +1,52 @@
+---
+proxmox_vm_iso_remove_unreferenced: true
+proxmox_ct_template_remove_unreferenced: true
+
+proxmox_storage:
+  local:
+    isos:
+      - https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/latest-virtio/virtio-win.iso
+      - https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.6.0-amd64-netinst.iso
+    ct_templates: # To get these, run "pveam available -section system" on the PVE host
+      - debian-12-standard_12.2-1_amd64.tar.zst
+
+proxmox_templates:
+  10000:
+    name: debian-12-template
+    cloud_image_url: https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
+    storage: local-lvm
+
+proxmox_template_defaults:
+  agent: 0
+  bios: ovmf
+  cores: 1
+  cpu: host
+  memory: 2048
+  onboot: false
+  machine: q35
+  ostype: l26
+  scsihw: virtio-scsi-single
+  sockets: 1
+  vga: qxl
+  netdev_firewall: true
+  netdev_type: virtio
+  netdev_bridge: vmbr0
+  ciuser: "{{ lookup('ansible.builtin.env', 'TF_VAR_CIUSER') }}"
+  cipassword: "{{ lookup('ansible.builtin.env', 'TF_VAR_CIPASSWORD') }}"
+  sshkeys: "{{ lookup('ansible.builtin.env', 'TF_VAR_SSH_PUBLIC_KEY') }}"
+
+proxmox_access:
+  role: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_API_ROLE') }}"
+  user: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_API_USER') }}"
+  token_name: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_API_TOKEN_NAME') }}"
+  privs: "Datastore.AllocateSpace Datastore.Audit Pool.Allocate Sys.Audit Sys.Console Sys.Modify VM.Allocate VM.Audit VM.Clone VM.Config.CDROM VM.Config.Cloudinit VM.Config.CPU VM.Config.Disk VM.Config.HWType VM.Config.Memory VM.Config.Network VM.Config.Options VM.Migrate VM.Monitor VM.PowerMgmt SDN.Use"
+  privsep: 0
+
+proxmox_backup:
+  storage_name: "backup"
+  server_address: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_BACKUP_SERVER') }}"
+  server_share: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_BACKUP_SERVER_SHARE') }}"
+  server_username: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_BACKUP_SERVER_USERNAME') }}"
+  server_password: "{{ lookup('ansible.builtin.env', 'TF_VAR_PROXMOX_BACKUP_SERVER_PASSWORD') }}"
+  node_name: "{{ ansible_hostname }}"
+  keep_last: 12

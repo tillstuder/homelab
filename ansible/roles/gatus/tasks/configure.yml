@@ -1,0 +1,20 @@
+---
+- name: Stop gatus
+  ansible.builtin.systemd:
+    name: "{{ gatus_daemon }}"
+    state: stopped
+
+- name: Copy config file
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ gatus_home_dir }}/config/config.yaml"
+    owner: "{{ gatus_user }}"
+    group: "{{ gatus_group }}"
+    mode: "0664"
+
+- name: Enable and start gatus
+  ansible.builtin.systemd:
+    daemon-reload: true
+    name: "{{ gatus_daemon }}"
+    state: started
+    enabled: true

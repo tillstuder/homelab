@@ -1,0 +1,24 @@
+---
+- name: Check if ntfy is installed.
+  ansible.builtin.stat:
+    path: "{{ ntfy_bin_file }}"
+
+- name: Verify correct version of ntfy has been installed.
+  ansible.builtin.command: ntfy --help
+  args:
+    chdir: /usr/local/bin
+  changed_when: false
+  register: __ntfy_help
+  failed_when: __ntfy_help is not search(ntfy_version)
+
+- name: Check if ntfy.service is started
+  ansible.builtin.service:
+    name: "{{ ntfy_daemon }}"
+    state: started
+    enabled: true
+  check_mode: true
+  register: service
+  until: service is succeeded
+  retries: 3
+  delay: 5
+  failed_when: (service is changed) or (service is failed)

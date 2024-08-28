@@ -1,0 +1,30 @@
+---
+- name: Common playbook for all our services
+  hosts: services
+  roles:
+    - common
+
+- name: AdGuard Home
+  hosts: adguardhome
+  roles:
+    - adguardhome
+
+- name: Tailscale
+  hosts: tailscale
+  roles:
+    - tailscale
+
+- name: Homer
+  hosts: homer
+  roles:
+    - homer
+
+- name: ntfy # noqa: name[casing]
+  hosts: ntfy
+  roles:
+    - ntfy
+
+- name: Gatus
+  hosts: gatus
+  roles:
+    - gatus

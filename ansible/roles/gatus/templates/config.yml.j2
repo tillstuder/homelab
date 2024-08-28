@@ -1,0 +1,102 @@
+storage:
+  type: sqlite
+  path: {{ gatus_home_dir }}/data/data.db
+
+connectivity:
+  checker:
+    target: 1.1.1.1:53
+    interval: 60s
+
+web:
+  port: {{ gatus_web_port }}
+
+alerting:
+  ntfy:
+    topic: "health"
+    url: "http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_NTFY') }}"
+    priority: 1
+    default-alert:
+      send-on-resolved: true
+      failure-threshold: 1
+      success-threshold: 2
+
+endpoints:
+  - name: "Till Studer's Notes"
+    interval: 5m
+    url: "https://notes.tillstuder.com"
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"
+      - "[RESPONSE_TIME] < 500"
+      - "[CERTIFICATE_EXPIRATION] > 48h"
+    alerts:
+      - type: ntfy
+
+  - name: "Synology DS415+"
+    interval: 5m
+    url: "https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_SYNOLOGY') }}:5001"
+    client:
+      insecure: true
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"
+    alerts:
+      - type: ntfy
+
+  - name: "PVE2"
+    interval: 5m
+    url: "https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_PVE2') }}:8006"
+    client:
+      insecure: true
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"
+    alerts:
+      - type: ntfy
+
+  - name: "iDRAC"
+    interval: 5m
+    url: "https://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_IDRAC') }}/restgui/start.html"
+    client:
+      insecure: true
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"
+    alerts:
+      - type: ntfy
+
+  - name: "Homer"
+    interval: 5m
+    url: "http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_HOMER') }}"
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"
+    alerts:
+      - type: ntfy
+
+  - name: "AdGuard Home"
+    interval: 30s
+    url: "http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_ADGUARDHOME') }}"
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"
+      - "[RESPONSE_TIME] < 100"
+    alerts:
+      - type: ntfy
+
+  - name: AdGuard Home DNS Internet Query Check
+    interval: 30s
+    url: "{{ lookup('ansible.builtin.env', 'TF_VAR_IP_ADGUARDHOME') }}"
+    dns:
+      query-name: "google.com"
+      query-type: "A"
+    conditions:
+      - "[DNS_RCODE] == NOERROR"
+      - "[RESPONSE_TIME] < 100"
+
+  - name: "ntfy"
+    interval: 5m
+    url: "http://{{ lookup('ansible.builtin.env', 'TF_VAR_IP_NTFY') }}"
+    conditions:
+      - "[CONNECTED] == true"
+      - "[STATUS] < 300"

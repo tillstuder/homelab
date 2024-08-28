@@ -1,0 +1,27 @@
+---
+- name: Create homer systemd service file
+  ansible.builtin.template:
+    src: "{{ homer_daemon }}.service.j2"
+    dest: /lib/systemd/system/{{ homer_daemon }}.service
+    owner: "{{ homer_user }}"
+    group: "{{ homer_group }}"
+    mode: "0644"
+
+- name: Stop homer.
+  ansible.builtin.service:
+    name: "{{ homer_daemon }}"
+    state: stopped
+
+- name: Copy config file.
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ homer_config_file }}"
+    owner: "{{ homer_user }}"
+    group: "{{ homer_group }}"
+    mode: "0644"
+
+- name: Start homer.
+  ansible.builtin.service:
+    name: "{{ homer_daemon }}"
+    state: started
+    enabled: true

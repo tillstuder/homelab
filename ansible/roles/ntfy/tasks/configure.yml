@@ -1,0 +1,20 @@
+---
+- name: Stop ntfy
+  ansible.builtin.systemd:
+    name: "{{ ntfy_daemon }}"
+    state: stopped
+
+- name: Update config
+  ansible.builtin.template:
+    src: server.yml.j2
+    dest: "{{ ntfy_config_file }}"
+    owner: "{{ ntfy_user }}"
+    group: "{{ ntfy_group }}"
+    mode: "0600"
+
+- name: Enable and start ntfy
+  ansible.builtin.systemd:
+    daemon-reload: true
+    name: "{{ ntfy_daemon }}"
+    state: started
+    enabled: true

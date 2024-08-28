@@ -1,0 +1,7 @@
+---
+# Original Source: https://github.com/bcook254/ansible-role-adguardhome
+- name: AdGuard Home tasks
+  ansible.builtin.include_tasks: adguardhome.yml
+  args:
+    apply:
+      become: true

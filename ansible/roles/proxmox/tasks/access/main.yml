@@ -1,0 +1,43 @@
+---
+- name: Get existing roles
+  ansible.builtin.command: >-
+    pvesh get /access/roles --output-format json
+  register: existing_roles
+  changed_when: false
+
+- name: Create role if it doesn't exist # noqa: no-changed-when
+  ansible.builtin.command: >-
+    pvesh create /access/roles --roleid {{ proxmox_access.role }} --privs "{{ proxmox_access.privs }}"
+  when: existing_roles.stdout | from_json | json_query('[?roleid == `'+ proxmox_access.role + '`].roleid') | length == 0
+
+- name: Get existing users
+  ansible.builtin.command: >-
+    pvesh get /access/users --output-format json
+  register: existing_users
+  changed_when: false
+
+- name: Create user if it doesn't exist # noqa: no-changed-when
+  ansible.builtin.command: >-
+    pvesh create /access/users --userid {{ proxmox_access.user }}
+  when: existing_users.stdout | from_json | json_query('[?userid == `'+ proxmox_access.user + '`].userid') | length == 0
+
+- name: Assign role to user # noqa: no-changed-when
+  ansible.builtin.command: >-
+    pvesh set /access/acl --path / --roles {{ proxmox_access.role }} --users {{ proxmox_access.user }}
+
+- name: Check if Terraform API token already exists
+  ansible.builtin.command: >-
+    pvesh get /access/users/{{ proxmox_access.user }}/token --output-format json
+  register: existing_tokens
+  changed_when: false
+
+- name: Create Terraform API token if it doesn't exist # noqa: no-changed-when
+  ansible.builtin.command: >-
+    pvesh create /access/users/{{ proxmox_access.user }}/token/{{ proxmox_access.token_name }} --privsep {{ proxmox_access.privsep }} --output-format=json
+  when: existing_tokens.stdout | from_json | json_query('[?tokenid == `'+ proxmox_access.token_name + '`].tokenid') | length == 0
+  register: terraform_api_token
+
+- name: Display Terraform API token # noqa: no-changed-when, no-handler
+  ansible.builtin.debug:
+    msg: "SAVE THIS TERRAFORM API TOKEN TO YOUR .ENV FILE: {{ terraform_api_token.stdout | from_json | json_query('value') }}"
+  when: terraform_api_token is changed

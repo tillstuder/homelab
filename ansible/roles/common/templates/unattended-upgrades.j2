@@ -1,0 +1,29 @@
+{{ ansible_managed | comment('c') }}
+
+Unattended-Upgrade::Allowed-Origins {
+{% if common_unattended_origins_patterns is defined %}
+  {% for origin in common_unattended_origins_patterns %}
+    "{{ origin }}";
+  {% endfor %}
+{% else %}
+  {% for origin in __common_unattended_origins_patterns %}
+   "{{ origin }}";
+  {% endfor %}
+{% endif %}
+};
+
+Unattended-Upgrade::Package-Blacklist {
+{% for package in common_unattended_package_blacklist %}
+      "{{package}}";
+{% endfor %}
+};
+
+Unattended-Upgrade::AutoFixInterruptedDpkg "{{ common_unattended_autofix_interrupted_dpkg }}";
+Unattended-Upgrade::InstallOnShutdown "{{ common_unattended_install_on_shutdown }}";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "{{ common_unattended_remove_unused_kernel_packages }}";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "{{ common_unattended_remove_new_unused_dependencies }}";
+Unattended-Upgrade::Remove-Unused-Dependencies "{{ common_unattended_remove_unused_dependencies }}";
+Unattended-Upgrade::Automatic-Reboot "{{ common_unattended_automatic_reboot }}";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "{{ common_unattended_automatic_reboot_withusers }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ common_unattended_automatic_reboot_time }}";
+Unattended-Upgrade::OnlyOnACPower "{{ common_unattended_only_on_ac_power }}";

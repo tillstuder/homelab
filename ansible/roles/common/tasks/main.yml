@@ -1,0 +1,6 @@
+---
+- name: Common tasks
+  ansible.builtin.include_tasks: common.yml
+  args:
+    apply:
+      become: true

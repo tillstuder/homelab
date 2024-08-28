@@ -1,0 +1,77 @@
+---
+- name: Ensure ntfy group exists.
+  ansible.builtin.group:
+    name: "{{ ntfy_group }}"
+    state: present
+    system: true
+
+- name: Ensure ntfy user exists.
+  ansible.builtin.user:
+    name: "{{ ntfy_user }}"
+    group: "{{ ntfy_group }}"
+    home: "{{ ntfy_home_dir }}"
+    shell: /usr/sbin/nologin
+    system: true
+
+# APT repository
+- name: Create /etc/apt/keyrings/
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/
+    state: directory
+    mode: "0755"
+
+- name: Install archive.heckel.io repository keyring
+  ansible.builtin.get_url:
+    url: https://archive.heckel.io/apt/keyring.gpg
+    dest: /etc/apt/keyrings/archive.heckel.io.gpg
+    mode: "0644"
+
+- name: Add archive.heckel.io repository
+  ansible.builtin.apt_repository:
+    repo: deb [arch=amd64 signed-by=/etc/apt/keyrings/archive.heckel.io.gpg] https://archive.heckel.io/apt debian main
+    state: present
+    filename: ntfy
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+
+# Install ntfy
+- name: Install ntfy and dependencies
+  ansible.builtin.apt:
+    pkg:
+      - ntfy
+      - sqlite3
+      - jq
+    state: present # Not: latest, we want to restart manually!
+
+- name: Create /etc/systemd/system/ntfy.service.d
+  ansible.builtin.file:
+    path: /etc/systemd/system/ntfy.service.d
+    state: directory
+    mode: "0755"
+
+- name: Update /etc/systemd/system/ntfy.service.d/override.conf
+  ansible.builtin.copy:
+    src: override.conf
+    dest: /etc/systemd/system/ntfy.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install ntfy logrotate config /etc/logrotate.d/ntfy
+  ansible.builtin.copy:
+    src: ntfy
+    dest: /etc/logrotate.d/ntfy
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure log file exists /var/log/ntfy.log
+  ansible.builtin.copy:
+    content: ""
+    dest: /var/log/ntfy.log
+    force: false # !
+    owner: "{{ ntfy_user }}"
+    group: "{{ ntfy_group }}"
+    mode: "0600"

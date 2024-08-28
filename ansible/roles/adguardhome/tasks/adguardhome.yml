@@ -1,0 +1,11 @@
+---
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+  when: adguardhome_manage_config
+
+- name: Verify
+  ansible.builtin.include_tasks: verify.yml
+  when: adguardhome_manage_config

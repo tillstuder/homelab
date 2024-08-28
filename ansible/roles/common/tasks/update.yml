@@ -1,0 +1,30 @@
+---
+- name: Run the equivalent of "apt-get update" as a separate step
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Upgrade all packages to the latest version
+  ansible.builtin.apt:
+    upgrade: full
+
+- name: Upgrade the OS (apt-get dist-upgrade)
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Remove useless packages from the cache
+  ansible.builtin.apt:
+    autoclean: true
+
+- name: Remove dependencies that are no longer required
+  ansible.builtin.apt:
+    autoremove: true
+
+- name: Check for pending reboot
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+  changed_when: false
+
+- name: REBOOT REQUIRED - IF THIS IS YELLOW THIS NODE NEEDS TO REBOOT # noqa: no-changed-when
+  ansible.builtin.command: echo "This needs to reboot"
+  when: reboot_required.stat.exists

@@ -1,0 +1,6 @@
+---
+- name: Preparing PVE hosts
+  hosts: pve
+  roles:
+    - proxmox
+    - common

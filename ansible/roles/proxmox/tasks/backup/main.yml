@@ -1,0 +1,44 @@
+---
+- name: Get existing storage volumes
+  ansible.builtin.command: >-
+    pvesh get /storage --output-format json
+  register: existing_storages
+  changed_when: false
+
+- name: Create backup storage volume if it doesn't exist # noqa: no-changed-when
+  ansible.builtin.command: >-
+    pvesh create /storage
+    --storage {{ proxmox_backup.storage_name }}
+    --type cifs
+    --content backup
+    --path /mnt/pve/{{ proxmox_backup.storage_name }}
+    --prune-backups keep-all=1
+    --server {{ proxmox_backup.server_address }}
+    --share {{ proxmox_backup.server_share }}
+    --nodes {{ proxmox_backup.node_name }}
+    --password {{ proxmox_backup.server_password }}
+    --subdir /{{ proxmox_backup.node_name }}
+    --username {{ proxmox_backup.server_username }}
+  when: existing_storages.stdout | from_json | json_query('[?storage == `'+ proxmox_backup.storage_name + '`].storage') | length == 0
+
+- name: Get existing backup jobs
+  ansible.builtin.command: >-
+    pvesh get /cluster/backup --output-format json
+  register: existing_backup_jobs
+  changed_when: false
+
+- name: Create backup job if it doesn't exist # noqa: no-changed-when
+  ansible.builtin.command: >-
+    pvesh create /cluster/backup
+    --all 1
+    --compress zstd
+    --enabled 1
+    --fleecing enabled=0
+    --mode snapshot
+    --node {{ proxmox_backup.node_name }}
+    --notes-template "{{ '{{' }}guestname{{ '}}' }}"
+    --prune-backups keep-last={{ proxmox_backup.keep_last }}
+    --repeat-missed 1
+    --schedule "sun 01:00"
+    --storage {{ proxmox_backup.storage_name }}
+  when: existing_backup_jobs.stdout | from_json | json_query('[?storage == `'+ proxmox_backup.storage_name + '`].storage') | length == 0

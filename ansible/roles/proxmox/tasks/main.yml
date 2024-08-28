@@ -1,0 +1,32 @@
+---
+# Original Source: https://github.com/robert-sandor/ansible-proxmox
+# Docs: https://pve.proxmox.com/pve-docs/api-viewer/
+- name: Setup Proxmox
+  ansible.builtin.import_tasks: setup/main.yml
+
+- name: Check for pending reboot
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: reboot_required
+  changed_when: false
+
+- name: Reboot if required
+  ansible.builtin.reboot:
+  throttle: 1
+  become: true
+  when:
+    - reboot_required is defined
+    - reboot_required.stat.exists
+
+- name: Setup Backup
+  ansible.builtin.import_tasks: backup/main.yml
+
+- name: Setup Storage
+  ansible.builtin.import_tasks: storage/main.yml
+
+- name: Setup Templates and ISOs
+  ansible.builtin.import_tasks: templates/main.yml
+
+# This task needs to be last becasue it displays the Terraform API token to the user at the end
+- name: Setup Terraform Access
+  ansible.builtin.import_tasks: access/main.yml

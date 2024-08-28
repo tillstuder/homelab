@@ -1,0 +1,12 @@
+---
+- name: Check if gatus.service is started
+  ansible.builtin.service:
+    name: "{{ gatus_daemon }}"
+    state: started
+    enabled: true
+  check_mode: true
+  register: service
+  until: service is succeeded
+  retries: 3
+  delay: 5
+  failed_when: (service is changed) or (service is failed)

@@ -1,0 +1,18 @@
+---
+common_unattended_cache_valid_time: 3600
+
+common_unattended_package_blacklist: []
+common_unattended_autofix_interrupted_dpkg: true
+common_unattended_install_on_shutdown: false
+common_unattended_remove_unused_kernel_packages: true
+common_unattended_remove_new_unused_dependencies: true
+common_unattended_remove_unused_dependencies: true
+common_unattended_automatic_reboot: true
+common_unattended_automatic_reboot_withusers: false
+common_unattended_automatic_reboot_time: 04:00
+common_unattended_only_on_ac_power: false
+
+common_unattended_update_package_list: 1
+common_unattended_download_upgradeable: 1
+common_unattended_autoclean_interval: 7
+common_unattended_clean_interval: 2

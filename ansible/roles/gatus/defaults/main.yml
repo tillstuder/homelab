@@ -1,0 +1,10 @@
+---
+gatus_golang_version: 1.22.2
+gatus_golang_tarball: go{{ gatus_golang_version }}.linux-amd64.tar.gz
+gatus_golang_version_target: go version go{{ gatus_golang_version }} linux/amd64
+
+gatus_user: gatus
+gatus_group: gatus
+gatus_daemon: gatus
+gatus_home_dir: /home/gatus
+gatus_web_port: 80

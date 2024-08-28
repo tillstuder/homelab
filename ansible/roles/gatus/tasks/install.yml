@@ -1,0 +1,96 @@
+---
+- name: Ensure gatus group exists.
+  ansible.builtin.group:
+    name: "{{ gatus_group }}"
+    state: present
+    system: true
+
+- name: Ensure gatus user exists.
+  ansible.builtin.user:
+    name: "{{ gatus_user }}"
+    group: "{{ gatus_group }}"
+    home: "{{ gatus_home_dir }}"
+    shell: /usr/sbin/nologin
+
+- name: Install golang
+  ansible.builtin.include_tasks: golang.yml
+
+- name: Ensure required folders are created
+  ansible.builtin.file:
+    path: "{{ gatus_home_dir }}/{{ item }}"
+    state: directory
+    owner: "{{ gatus_user }}"
+    group: "{{ gatus_group }}"
+    mode: "0755"
+  loop:
+    - data
+    - config
+
+- name: Install software dependencies
+  ansible.builtin.package:
+    name:
+      - git
+      - sqlite3
+      - ca-certificates
+    state: present
+
+- name: Copy systemd unit file
+  ansible.builtin.template:
+    src: gatus.service.j2
+    dest: /lib/systemd/system/{{ gatus_daemon }}.service
+    mode: "0744"
+
+- name: Check if source already available
+  ansible.builtin.stat:
+    path: "{{ gatus_home_dir }}/src"
+  register: source_dir
+
+- name: Clone source code
+  ansible.builtin.git:
+    repo: https://github.com/TwiN/gatus.git
+    dest: "{{ gatus_home_dir }}/src"
+    version: master
+    single_branch: true
+  when: not source_dir.stat.exists
+
+- name: Check if binary already built
+  ansible.builtin.stat:
+    path: "{{ gatus_home_dir }}/gatus"
+  register: binary_file
+
+- name: Build source (this may take a while)
+  ansible.builtin.shell: |
+    export PATH=$PATH:/usr/local/go/bin
+    CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gatus .
+  args:
+    chdir: "{{ gatus_home_dir }}/src"
+  when: not binary_file.stat.exists
+  changed_when: true
+
+- name: Copy binary output
+  ansible.builtin.copy:
+    src: "{{ gatus_home_dir }}/src/gatus"
+    dest: "{{ gatus_home_dir }}"
+    mode: "0755"
+    owner: "{{ gatus_user }}"
+    group: "{{ gatus_group }}"
+    remote_src: true
+  when: not binary_file.stat.exists
+
+- name: Allow selinux permission for gatus binary
+  sefcontext:
+    target: "{{ gatus_home_dir }}/gatus"
+    setype: bin_t
+    state: present
+  when: ansible_facts.selinux.status == 'enabled'
+
+- name: Restore selinux context
+  ansible.builtin.command: restorecon -irv "{{ gatus_home_dir }}/gatus"
+  changed_when: true
+  when: ansible_facts.selinux.status == 'enabled'
+
+- name: Permit cap_net_bind_service for https port
+  community.general.capabilities:
+    path: "{{ gatus_home_dir }}/gatus"
+    capability: cap_net_bind_service+ep
+    state: present
