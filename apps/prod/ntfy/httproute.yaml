@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ntfy
+spec:
+  parentRefs:
+    - name: gateway-shared
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - "ntfy.lab.cyseclab.net"
+  rules:
+    - backendRefs:
+        - name: ntfy
+          port: 80

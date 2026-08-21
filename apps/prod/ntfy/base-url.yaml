@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntfy
+spec:
+  template:
+    spec:
+      containers:
+        - name: ntfy
+          env:
+            - name: NTFY_BASE_URL
+              value: https://ntfy.lab.cyseclab.net

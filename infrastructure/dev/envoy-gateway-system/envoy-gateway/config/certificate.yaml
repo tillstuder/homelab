@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-tls
+  namespace: envoy-gateway-system
+spec:
+  secretName: wildcard-tls
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-staging
+  commonName: "*.dev.lab.cyseclab.net"
+  dnsNames:
+    - "dev.lab.cyseclab.net"
+    - "*.dev.lab.cyseclab.net"

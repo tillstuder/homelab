@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/cilium/cilium/refs/heads/main/install/kubernetes/cilium/values.schema.json
+
+# Talos requirements:
+# https://docs.siderolabs.com/kubernetes-guides/cni/deploying-cilium
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: true
+securityContext:
+  capabilities:
+    ciliumAgent: [CHOWN, KILL, NET_ADMIN, NET_RAW, IPC_LOCK, SYS_ADMIN, SYS_RESOURCE, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    cleanCiliumState: [NET_ADMIN, SYS_ADMIN, SYS_RESOURCE]
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+k8sServiceHost: localhost
+k8sServicePort: 7445
+
+# LoadBalancer services:
+l2announcements:
+  enabled: true
+k8sClientRateLimit:
+  burst: 60
+  qps: 30
+
+# Envoy Gateway provides Gateway API:
+gatewayAPI:
+  enabled: false
+
+# Observability:
+operator:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+hubble:
+  relay:
+    enabled: true
+    prometheus:
+      enabled: true
+      serviceMonitor:
+        enabled: false
+  metrics:
+    enableOpenMetrics: true
+    serviceMonitor:
+      enabled: false
+    enabled:
+      - "dns:labelsContext=source_namespace,destination_namespace"
+      - "drop:labelsContext=source_namespace,destination_namespace"
+      - "flow:labelsContext=source_namespace,destination_namespace;sourceContext=workload-name|reserved-identity;destinationContext=workload-name|reserved-identity"
+      - "tcp:labelsContext=source_namespace,destination_namespace"

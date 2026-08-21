@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/cert-manager/cert-manager/master/deploy/charts/cert-manager/values.schema.json
+crds:
+  enabled: true
+  keep: true
+
+replicaCount: 1
+
+dns01RecursiveNameservers: "1.1.1.1:53,8.8.8.8:53"
+dns01RecursiveNameserversOnly: true
+
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: false

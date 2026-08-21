@@ -1,0 +1,35 @@
+configs:
+  params:
+    server.insecure: true
+  repositories:
+    envoy-gateway:
+      name: envoy-gateway
+      type: helm
+      url: docker.io/envoyproxy
+      enableOCI: "true"
+
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+server:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+repoServer:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+applicationSet:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false
+redis:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: false

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cilium
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://github.com/tillstuder/homelab.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://helm.cilium.io
+      chart: cilium
+      targetRevision: 1.20.1
+      helm:
+        releaseName: cilium
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/infrastructure/base/cilium/values.yaml
+          - $values/clusters/prod/values/cilium.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,8 @@
+# talhelper generated machine configs (contains secrets)
+talos/clusterconfig/
+talos/talsecret.yaml
+
+# local kube/talos state
+kubeconfig
+talosconfig
+*.decrypted.yaml

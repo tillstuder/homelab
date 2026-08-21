@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+# talhelper genconfig --config-file talconfig-prod.yaml --env-file talenv.yaml
+clusterName: prod
+endpoint: https://10.42.5.10:6443
+
+cniConfig:
+  name: none
+
+clusterPodNets: ["10.244.0.0/16"]
+clusterSvcNets: ["10.96.0.0/12"]
+
+allowSchedulingOnControlPlanes: true
+
+nodes:
+  - hostname: prod-cp-1
+    ipAddress: 10.42.5.11
+    controlPlane: true
+    installDisk: /dev/sda                    # PLACEHOLDER: verify with `talosctl disks -n <ip> --insecure`
+    networkInterfaces:
+      - deviceSelector:
+          busPath: "0*"                      # PLACEHOLDER: verify with `talosctl get links -n <ip> --insecure`
+        dhcp: false
+        addresses: ["10.42.5.11/24"]
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 10.42.5.1
+        vip:
+          ip: 10.42.5.10
+  - hostname: prod-cp-2
+    ipAddress: 10.42.5.12
+    controlPlane: true
+    installDisk: /dev/sda
+    networkInterfaces:
+      - deviceSelector:
+          busPath: "0*"
+        dhcp: false
+        addresses: ["10.42.5.12/24"]
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 10.42.5.1
+        vip:
+          ip: 10.42.5.10
+  - hostname: prod-cp-3
+    ipAddress: 10.42.5.13
+    controlPlane: true
+    installDisk: /dev/sda
+    networkInterfaces:
+      - deviceSelector:
+          busPath: "0*"
+        dhcp: false
+        addresses: ["10.42.5.13/24"]
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 10.42.5.1
+        vip:
+          ip: 10.42.5.10
+
+patches:
+  - "@./patches/kube-proxy-disabled.yaml"
+  - "@./patches/cluster-discovery.yaml"
+  - "@./patches/kubelet.yaml"
+  - "@./patches/pod-security.yaml"

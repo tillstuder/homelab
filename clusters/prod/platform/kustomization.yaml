@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./argo-cd.yaml
+  - ./cert-manager-config.yaml
+  - ./cert-manager.yaml
+  - ./cilium-config.yaml
+  - ./cilium.yaml
+  - ./envoy-gateway-config.yaml
+  - ./envoy-gateway.yaml
+  - ./external-secrets-config.yaml
+  - ./external-secrets.yaml
+  - ./local-path-provisioner.yaml

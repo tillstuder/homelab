@@ -1,0 +1,10 @@
+machine:
+  kubelet:
+    extraArgs:
+      rotate-server-certificates: "true"
+    extraConfig:
+      serverTLSBootstrap: true
+  features:
+    kubePrism:
+      enabled: true
+      port: 7445

@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+# talhelper genconfig --config-file talconfig-dev.yaml --env-file talenv.yaml
+clusterName: dev
+endpoint: https://10.42.5.21:6443
+
+cniConfig:
+  name: none
+
+clusterPodNets: ["10.245.0.0/16"]
+clusterSvcNets: ["10.112.0.0/12"]
+
+allowSchedulingOnControlPlanes: true
+
+nodes:
+  - hostname: dev-cp-1
+    ipAddress: 10.42.5.21
+    controlPlane: true
+    installDisk: /dev/sda
+    networkInterfaces:
+      - deviceSelector:
+          busPath: "0*"
+        dhcp: false
+        addresses: ["10.42.5.21/24"]
+        routes:
+          - network: 0.0.0.0/0
+            gateway: 10.42.5.1
+
+patches:
+  - "@./patches/kube-proxy-disabled.yaml"
+  - "@./patches/cluster-discovery.yaml"
+  - "@./patches/kubelet.yaml"
+  - "@./patches/pod-security.yaml"

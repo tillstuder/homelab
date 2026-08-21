@@ -1,0 +1,8 @@
+crds:
+  enabled: true
+
+config:
+  envoyGateway:
+    logging:
+      level:
+        default: warn

@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/external-secrets/external-secrets/main/deploy/charts/external-secrets/values.yaml
+crds:
+  createClusterExternalSecret: true
+  createClusterSecretStore: true
+
+replicaCount: 1
+
+serviceMonitor:
+  enabled: false
