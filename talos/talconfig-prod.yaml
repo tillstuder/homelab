@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
 # talhelper genconfig --config-file talconfig-prod.yaml --env-file talenv.yaml
 clusterName: prod
-endpoint: https://10.42.5.10:6443
+endpoint: https://10.42.5.200:6443
 
 cniConfig:
   name: none
@@ -13,47 +13,47 @@ allowSchedulingOnControlPlanes: true
 
 nodes:
   - hostname: prod-cp-1
-    ipAddress: 10.42.5.11
+    ipAddress: 10.42.5.201
     controlPlane: true
     installDisk: /dev/sda                    # PLACEHOLDER: verify with `talosctl disks -n <ip> --insecure`
     networkInterfaces:
       - deviceSelector:
           busPath: "0*"                      # PLACEHOLDER: verify with `talosctl get links -n <ip> --insecure`
         dhcp: false
-        addresses: ["10.42.5.11/24"]
+        addresses: ["10.42.5.201/24"]
         routes:
           - network: 0.0.0.0/0
             gateway: 10.42.5.1
         vip:
-          ip: 10.42.5.10
+          ip: 10.42.5.200
   - hostname: prod-cp-2
-    ipAddress: 10.42.5.12
+    ipAddress: 10.42.5.202
     controlPlane: true
     installDisk: /dev/sda
     networkInterfaces:
       - deviceSelector:
           busPath: "0*"
         dhcp: false
-        addresses: ["10.42.5.12/24"]
+        addresses: ["10.42.5.202/24"]
         routes:
           - network: 0.0.0.0/0
             gateway: 10.42.5.1
         vip:
-          ip: 10.42.5.10
+          ip: 10.42.5.200
   - hostname: prod-cp-3
-    ipAddress: 10.42.5.13
+    ipAddress: 10.42.5.203
     controlPlane: true
     installDisk: /dev/sda
     networkInterfaces:
       - deviceSelector:
           busPath: "0*"
         dhcp: false
-        addresses: ["10.42.5.13/24"]
+        addresses: ["10.42.5.203/24"]
         routes:
           - network: 0.0.0.0/0
             gateway: 10.42.5.1
         vip:
-          ip: 10.42.5.10
+          ip: 10.42.5.200
 
 patches:
   - "@./patches/kube-proxy-disabled.yaml"

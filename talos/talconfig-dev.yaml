@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
 # talhelper genconfig --config-file talconfig-dev.yaml --env-file talenv.yaml
 clusterName: dev
-endpoint: https://10.42.5.21:6443
+endpoint: https://10.42.5.210:6443
 
 cniConfig:
   name: none
@@ -13,14 +13,14 @@ allowSchedulingOnControlPlanes: true
 
 nodes:
   - hostname: dev-cp-1
-    ipAddress: 10.42.5.21
+    ipAddress: 10.42.5.210
     controlPlane: true
     installDisk: /dev/sda
     networkInterfaces:
       - deviceSelector:
           busPath: "0*"
         dhcp: false
-        addresses: ["10.42.5.21/24"]
+        addresses: ["10.42.5.210/24"]
         routes:
           - network: 0.0.0.0/0
             gateway: 10.42.5.1

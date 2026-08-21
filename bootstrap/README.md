@@ -2,14 +2,16 @@
 
 Both `prod` and `dev` follow the same steps, please substitute the cluster name and, where noted, the differing IP.
 
-|            | prod                    | dev                        |
-| ---------- | ----------------------- | -------------------------- |
-| Endpoint   | `10.42.5.10`            | `10.42.5.21`               |
-| Nodes      | `.11` `.12` `.13`       | `.21`                      |
-| LB pool    | `10.42.5.240-.247`      | `10.42.5.248-.251`         |
-| Gateway IP | `10.42.5.240`           | `10.42.5.248`              |
-| Domain     | `lab.cyseclab.net`      | `dev.lab.cyseclab.net`     |
-| 1P vault   | `homelab-prod`          | `homelab-dev`              |
+`10.42.5.20-.199` is the DHCP range, so everything assigned here sits in `.200-.254`.
+
+|            | prod                 | dev                    |
+| ---------- | -------------------- | ---------------------- |
+| Endpoint   | `10.42.5.200`        | `10.42.5.210`          |
+| Nodes      | `.201` `.202` `.203` | `.210`                 |
+| LB pool    | `10.42.5.240-.247`   | `10.42.5.248-.251`     |
+| Gateway IP | `10.42.5.240`        | `10.42.5.248`          |
+| Domain     | `lab.cyseclab.net`   | `dev.lab.cyseclab.net` |
+| 1P vault   | `homelab-prod`       | `homelab-dev`          |
 
 ## 1. Proxmox VMs
 
@@ -19,8 +21,8 @@ Nothing here is managed by this repo, Talos is immutable, so the VM only needs a
 Then confirm the disk and NIC names the machine config will reference:
 
 ```sh
-talosctl disks     -n 10.42.5.11 --insecure
-talosctl get links -n 10.42.5.11 --insecure
+talosctl disks     -n 10.42.5.201 --insecure
+talosctl get links -n 10.42.5.201 --insecure
 ```
 
 Fix `installDisk` and `networkInterfaces[].deviceSelector` in `talos/talconfig-<cluster>.yaml` if they differ from the defaults.
@@ -37,7 +39,7 @@ op document create talsecret.yaml --title "talsecret-prod" --vault homelab-prod
 
 ```sh
 talhelper genconfig --config-file talconfig-prod.yaml --env-file talenv.yaml
-talosctl apply-config --insecure -n 10.42.5.11 -f clusterconfig/prod-prod-cp-1.yaml
+talosctl apply-config --insecure -n 10.42.5.201 -f clusterconfig/prod-prod-cp-1.yaml
 # repeat for each node...
 ```
 
@@ -45,8 +47,8 @@ talosctl apply-config --insecure -n 10.42.5.11 -f clusterconfig/prod-prod-cp-1.y
 
 ```sh
 export TALOSCONFIG=./clusterconfig/talosconfig
-talosctl config endpoint 10.42.5.11
-talosctl config node     10.42.5.11
+talosctl config endpoint 10.42.5.201
+talosctl config node     10.42.5.201
 talosctl bootstrap # only once, on a single control-plane node
 talosctl kubeconfig .
 ```
