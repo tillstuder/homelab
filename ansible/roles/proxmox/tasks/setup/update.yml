@@ -1,6 +1,0 @@
----
-- name: Update all packages # noqa: package-latest
-  ansible.builtin.apt:
-    pkg: "*"
-    state: latest
-    update_cache: true

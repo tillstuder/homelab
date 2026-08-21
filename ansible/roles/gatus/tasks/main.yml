@@ -1,6 +1,0 @@
----
-- name: gatus tasks # noqa: name[casing]
-  ansible.builtin.include_tasks: gatus.yml
-  args:
-    apply:
-      become: true

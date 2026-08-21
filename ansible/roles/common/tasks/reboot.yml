@@ -1,5 +1,0 @@
----
-- name: "*** --- ___REBOOTING___ --- ***"
-  ansible.builtin.reboot:
-  throttle: 1
-  become: true
