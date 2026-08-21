@@ -9,6 +9,8 @@ configs:
       enableOCI: "true"
 
 controller:
+  readinessProbe:
+    timeoutSeconds: 5
   metrics:
     enabled: true
     serviceMonitor:
