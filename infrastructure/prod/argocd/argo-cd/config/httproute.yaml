@@ -1,0 +1,15 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argo-cd-server
+spec:
+  parentRefs:
+    - name: gateway-shared
+      namespace: envoy-gateway-system
+      sectionName: https
+  hostnames:
+    - "argocd.lab.cyseclab.net"
+  rules:
+    - backendRefs:
+        - name: argo-cd-argocd-server
+          port: 80

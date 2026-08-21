@@ -50,7 +50,7 @@ Ordering is expressed with `argocd.argoproj.io/sync-wave`:
 | `0`    | cert-manager, External Secrets, Argo CD                 |
 | `1`    | ClusterIssuers, ClusterSecretStore                      |
 | `5`    | Envoy Gateway (ships the Gateway API CRDs)              |
-| `6`    | GatewayClass, Gateway, wildcard Certificate, HTTP→HTTPS |
+| `6`    | GatewayClass, Gateway, wildcard Certificate, HTTP→HTTPS, Argo CD's HTTPRoute |
 | `10`   | Workloads                                               |
 
 ### Helm values
@@ -114,12 +114,15 @@ Namespace labels override the cluster default, which makes exceptions possible.
 
 External Secrets using 1Password, there is one vault and service account per cluster (`homelab-prod`, `homelab-dev`) so dev cannot read prod credentials.
 
-Talos machine secrets (`talos/talsecret.yaml`) are gitignored and stored in 1Password.
+Talos machine secrets are per cluster (`talos/talsecret-prod.yaml`, `talos/talsecret-dev.yaml`), gitignored, and stored in 1Password.
 
 ## Next
 
 - **Monitoring**: Alloy, Loki, Grafana
 - **Notifications**: Using ntfy, so for example a failed Argo sync is a push notification to my phone.
 - **Backups**: The workload data on `local-path` is currently node-local and unreplicated.
+- **Kubelet certificates**: `serverTLSBootstrap` is on, but nothing approves the
+  `kubelet-serving` CSRs, so they must be approved by hand after every rotation or
+  `kubectl logs`/`exec`/`top` break. Needs a `kubelet-csr-approver`.
 - **Isolation**: Kata Containers or similar.
 - **Virtual Machines**: KubeVirt

@@ -12,8 +12,3 @@ cluster:
             audit-version: latest
             warn: restricted
             warn-version: latest
-          exemptions:
-            usernames: []
-            runtimeClasses: []
-            namespaces:
-              - kube-system

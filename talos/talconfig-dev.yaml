@@ -3,6 +3,9 @@
 clusterName: dev
 endpoint: https://10.42.5.210:6443
 
+talosVersion: ${talosVersion}
+kubernetesVersion: ${kubernetesVersion}
+
 cniConfig:
   name: none
 
@@ -18,7 +21,7 @@ nodes:
     installDisk: /dev/sda
     networkInterfaces:
       - deviceSelector:
-          busPath: "0*"
+          driver: virtio_net                 # the VM's single net0 virtio NIC
         dhcp: false
         addresses: ["10.42.5.210/24"]
         routes:

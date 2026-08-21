@@ -1,11 +1,2 @@
 global:
   domain: argocd.dev.lab.cyseclab.net
-server:
-  httproute:
-    enabled: true
-    hostnames:
-      - argocd.dev.lab.cyseclab.net
-    parentRefs:
-      - name: gateway-shared
-        namespace: envoy-gateway-system
-        sectionName: https

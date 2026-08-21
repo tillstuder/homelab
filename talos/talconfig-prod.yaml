@@ -3,6 +3,9 @@
 clusterName: prod
 endpoint: https://10.42.5.200:6443
 
+talosVersion: ${talosVersion}
+kubernetesVersion: ${kubernetesVersion}
+
 cniConfig:
   name: none
 
@@ -15,10 +18,10 @@ nodes:
   - hostname: prod-cp-1
     ipAddress: 10.42.5.201
     controlPlane: true
-    installDisk: /dev/sda                    # PLACEHOLDER: verify with `talosctl disks -n <ip> --insecure`
+    installDisk: /dev/sda                    # scsi0 on virtio-scsi-single
     networkInterfaces:
       - deviceSelector:
-          busPath: "0*"                      # PLACEHOLDER: verify with `talosctl get links -n <ip> --insecure`
+          driver: virtio_net                 # the VM's single net0 virtio NIC
         dhcp: false
         addresses: ["10.42.5.201/24"]
         routes:
@@ -32,7 +35,7 @@ nodes:
     installDisk: /dev/sda
     networkInterfaces:
       - deviceSelector:
-          busPath: "0*"
+          driver: virtio_net                 # the VM's single net0 virtio NIC
         dhcp: false
         addresses: ["10.42.5.202/24"]
         routes:
@@ -46,7 +49,7 @@ nodes:
     installDisk: /dev/sda
     networkInterfaces:
       - deviceSelector:
-          busPath: "0*"
+          driver: virtio_net                 # the VM's single net0 virtio NIC
         dhcp: false
         addresses: ["10.42.5.203/24"]
         routes:

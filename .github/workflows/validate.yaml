@@ -13,16 +13,20 @@ jobs:
   render:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
         with:
-          version: v3.19.0
+          version: v4.2.4
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
 
       - name: Install yq and kubeconform
         run: |
           sudo snap install yq
-          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz \
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
             | sudo tar -xz -C /usr/local/bin kubeconform
 
       - name: Render every kustomization and Helm chart
