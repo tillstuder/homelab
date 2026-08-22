@@ -8,17 +8,22 @@
   timezone: 'Europe/Zurich',
   schedule: ['* 0-6 * * *'],
   // The `argocd` manager parses Application/ApplicationSet manifests natively and
-  // bumps `spec.source.targetRevision` for Helm chart sources. Its default file
-  // pattern only matches `argocd.yaml`, so point it at our Application files.
+  // bumps `spec.source(s).targetRevision` for Helm chart sources. It ships with no
+  // default file pattern at all — without `managerFilePatterns` the manager matches
+  // nothing, so this block is required rather than a refinement of a default.
   argocd: {
     managerFilePatterns: ['/clusters/.+/(platform|apps)/.+\\.yaml$/'],
   },
   packageRules: [
     {
+      // Automerge stays PR-based on purpose. `automergeType: 'branch'` would push
+      // straight to a `renovate/*` branch and merge without opening a PR, and
+      // `.github/workflows/validate.yaml` only triggers on `pull_request` and on
+      // pushes to `main` — so nothing would ever run `scripts/validate.sh` before
+      // the merge landed, and Renovate would read "no checks" as green.
       description: 'DEV soaks everything first, merge without asking.',
       matchFileNames: ['clusters/dev/**'],
       automerge: true,
-      automergeType: 'branch',
       minimumReleaseAge: '0 days',
       commitMessagePrefix: 'dev:',
     },
@@ -28,6 +33,15 @@
       automerge: false,
       minimumReleaseAge: '7 days',
       commitMessagePrefix: 'prod:',
+    },
+    {
+      // `base/` is kustomized by both overlays, so a bump here reaches prod on the
+      // same merge that reaches dev — there is no dev-first soak to lean on. Give
+      // it prod's caution instead of the default (no aging, no review).
+      description: 'Shared base manifests reach prod immediately, so they get prod rules.',
+      matchFileNames: ['apps/base/**', 'infrastructure/base/**'],
+      automerge: false,
+      minimumReleaseAge: '7 days',
     },
     {
       description: 'Talos and Kubernetes versions are never automerged.',
