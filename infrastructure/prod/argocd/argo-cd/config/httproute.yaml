@@ -10,6 +10,10 @@ spec:
   hostnames:
     - "argocd.lab.cyseclab.net"
   rules:
-    - backendRefs:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
         - name: argo-cd-argocd-server
           port: 80
