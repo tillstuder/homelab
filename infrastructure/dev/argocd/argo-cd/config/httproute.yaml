@@ -4,7 +4,9 @@ metadata:
   name: argo-cd-server
 spec:
   parentRefs:
-    - name: gateway-shared
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-shared
       namespace: envoy-gateway-system
       sectionName: https
   hostnames:
@@ -15,5 +17,8 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: argo-cd-argocd-server
+        - group: ""
+          kind: Service
+          name: argo-cd-argocd-server
           port: 80
+          weight: 1

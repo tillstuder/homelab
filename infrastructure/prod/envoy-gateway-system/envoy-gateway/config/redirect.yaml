@@ -5,7 +5,9 @@ metadata:
   namespace: envoy-gateway-system
 spec:
   parentRefs:
-    - name: gateway-shared
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: gateway-shared
       sectionName: http
   hostnames:
     - "*.lab.cyseclab.net"
