@@ -15,17 +15,17 @@ spec:
     server: https://kubernetes.default.svc
     namespace: local-path-storage
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: privileged # local-path helper pod mounts a hostPath, which baseline forbids
+        pod-security.kubernetes.io/enforce-version: latest
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: latest
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: latest
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
-  managedNamespaceMetadata:
-    labels:
-      pod-security.kubernetes.io/enforce: privileged # local-path helper pod mounts a hostPath, which baseline forbids
-      pod-security.kubernetes.io/enforce-version: latest
-      pod-security.kubernetes.io/warn: restricted
-      pod-security.kubernetes.io/warn-version: latest
-      pod-security.kubernetes.io/audit: restricted
-      pod-security.kubernetes.io/audit-version: latest

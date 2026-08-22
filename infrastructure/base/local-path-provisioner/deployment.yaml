@@ -29,6 +29,8 @@ spec:
             - start
             - --config
             - /etc/config/config.json
+            - --service-account-name
+            - local-path-provisioner
           ports:
             - name: health
               containerPort: 8080

@@ -15,16 +15,16 @@ spec:
     server: https://kubernetes.default.svc
     namespace: ntfy
   syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: baseline
+        pod-security.kubernetes.io/enforce-version: latest
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: latest
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: latest
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-  managedNamespaceMetadata:
-    labels:
-      pod-security.kubernetes.io/enforce: baseline
-      pod-security.kubernetes.io/enforce-version: latest
-      pod-security.kubernetes.io/warn: restricted
-      pod-security.kubernetes.io/warn-version: latest
-      pod-security.kubernetes.io/audit: restricted
-      pod-security.kubernetes.io/audit-version: latest
