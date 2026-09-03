@@ -26,11 +26,16 @@ jobs:
         with:
           python-version: '3.13'
 
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.12.6
+          tofu_wrapper: false
+
       - name: Install yq and kubeconform
         run: |
           sudo snap install yq
           curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
             | sudo tar -xz -C /usr/local/bin kubeconform
 
-      - name: Render every kustomization and Helm chart
+      - name: Render manifests and charts, then validate the OpenTofu roots
         run: ./scripts/validate.sh

@@ -26,6 +26,7 @@ spec:
           image: docker.io/binwiederhier/ntfy:v2.27.0@sha256:f2419f405127afa868f10985c1a41449e673477cee1eb19994339a5ae8b592e7
           args: ["serve"]
           env:
+            # NTFY_BASE_URL is set per cluster, see apps/<env>/ntfy/base-url.yaml
             - name: NTFY_LISTEN_HTTP
               value: ":8080"
             - name: NTFY_BEHIND_PROXY
@@ -36,7 +37,6 @@ spec:
               value: /var/lib/ntfy/auth.db
             - name: NTFY_ATTACHMENT_CACHE_DIR
               value: /var/lib/ntfy/attachments
-            # NTFY_BASE_URL is set per cluster, see apps/<env>/ntfy/base-url.yaml
           ports:
             - name: http
               containerPort: 8080

@@ -49,6 +49,17 @@
       automerge: false,
       minimumReleaseAge: '14 days',
     },
+    {
+      // Picked up by the built-in `terraform` manager, which parses
+      // `required_providers` in every .tf file. These providers build and destroy
+      // the machines the clusters run on, and a bad bump is not something Argo can
+      // roll back, so they get the same caution as prod and are never automerged.
+      description: 'OpenTofu providers build the clusters themselves.',
+      matchFileNames: ['tofu/**'],
+      automerge: false,
+      minimumReleaseAge: '14 days',
+      commitMessagePrefix: 'tofu:',
+    },
   ],
   customManagers: [
     {

@@ -9,9 +9,9 @@ template` nor the cluster will tell you about.
 Usage: values_audit.py <declared.json> <ours.json> [<ours.json> ...]
 All inputs are JSON (converted from YAML by yq in validate.sh).
 """
+
 import json
 import sys
-
 
 # Some chart values are documented as accepting arbitrary user-supplied keys
 # while *also* declaring defaults of their own. Helm's schema cannot express
@@ -43,10 +43,12 @@ def lookup(declared, path):
 
 
 def main():
-    declared = json.load(open(sys.argv[1]))
+    with open(sys.argv[1]) as fh:
+        declared = json.load(fh)
     unknown = []
     for f in sys.argv[2:]:
-        ours = json.load(open(f))
+        with open(f) as fh:
+            ours = json.load(fh)
         for path in leaf_paths(ours):
             found, deepest = lookup(declared, path)
             if found:

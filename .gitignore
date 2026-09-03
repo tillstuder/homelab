@@ -1,8 +1,10 @@
-# talhelper generated machine configs (contains secrets)
-talos/clusterconfig/
-talos/talsecret*.yaml
-
-# local kube/talos state
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfstate.d/
+*.tfplan
+.terraform/
+tofu/clusters/*/.env
+tofu/clusters/*/.credentials/
 kubeconfig
 talosconfig
 *.decrypted.yaml

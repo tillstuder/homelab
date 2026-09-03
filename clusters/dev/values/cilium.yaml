@@ -1,3 +1,7 @@
 cluster:
   name: dev
   id: 2
+
+# As this is a single-node cluster:
+operator:
+  replicas: 1
