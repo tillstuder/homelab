@@ -1,0 +1,5 @@
+providerRegex: ^dev-cp-1$
+providerIpPrefixes:
+  - 10.42.5.210/32 # dev-cp-1
+
+replicas: 1 # It's a single-node cluster

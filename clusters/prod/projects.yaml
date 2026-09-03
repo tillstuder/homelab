@@ -12,6 +12,7 @@ spec:
     - https://helm.cilium.io
     - https://charts.jetstack.io
     - https://charts.external-secrets.io
+    - https://postfinance.github.io/kubelet-csr-approver
     - https://argoproj.github.io/argo-helm
     - docker.io/envoyproxy
   destinations:

@@ -1,0 +1,11 @@
+bypassDnsResolution: true
+allowedDnsNames: 1
+ignoreNonSystemNode: false
+bypassHostnameCheck: false
+skipDenyStep: false
+maxExpirationSeconds: "31622400" # 366d
+leaderElection: true
+metrics:
+  enable: true
+  serviceMonitor:
+    enabled: false

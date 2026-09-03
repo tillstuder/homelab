@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubelet-csr-approver
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-8"
+spec:
+  project: platform
+  sources:
+    - repoURL: https://github.com/tillstuder/homelab.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://postfinance.github.io/kubelet-csr-approver
+      chart: kubelet-csr-approver
+      targetRevision: 1.2.15
+      helm:
+        releaseName: kubelet-csr-approver
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/infrastructure/base/kubelet-csr-approver/values.yaml
+          - $values/clusters/prod/values/kubelet-csr-approver.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubelet-csr-approver
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/enforce-version: latest
+        pod-security.kubernetes.io/warn: restricted
+        pod-security.kubernetes.io/warn-version: latest
+        pod-security.kubernetes.io/audit: restricted
+        pod-security.kubernetes.io/audit-version: latest
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

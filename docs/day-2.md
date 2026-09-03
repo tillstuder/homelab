@@ -6,6 +6,7 @@
   - [3. Upgrade Kubernetes](#3-upgrade-kubernetes)
 - [Re-issuing client certificates](#re-issuing-client-certificates)
 - [Resizing a node](#resizing-a-node)
+- [Adding a cluster node](#adding-a-cluster-node)
 - [Removing a cluster node](#removing-a-cluster-node)
 - [Adopting existing DNS records](#adopting-existing-dns-records)
 
@@ -111,6 +112,30 @@ export TALOSCONFIG=$PWD/.credentials/talosconfig
 talosctl -n 10.42.5.201 service etcd
 kubectl get nodes -o custom-columns='NODE:.metadata.name,MEM:.status.capacity.memory'
 ```
+
+## Adding a cluster node
+
+To add a node, write to the `nodes` map in `tofu/clusters/<cluster>/main.tf`.
+
+But as `kubelet-csr-approver` keeps its own allowlist, a node missing from it gets its serving CSR **denied**.
+
+So you have to widen `clusters/<cluster>/values/kubelet-csr-approver.yaml` in the same change:
+
+```yaml
+providerRegex: ^prod-cp-[1-4]$   # widen the range
+providerIpPrefixes:
+  - 10.42.5.204/32               # prod-cp-4
+```
+
+> [!TIP]
+> A CSR that was already denied is never reconsidered.
+> Delete it and let the kubelet ask again:
+>
+> ```sh
+> kubectl get csr --field-selector spec.signerName=kubernetes.io/kubelet-serving
+> kubectl -n kubelet-csr-approver logs deploy/kubelet-csr-approver | grep -i deny
+> kubectl delete csr <name>
+> ```
 
 ## Removing a cluster node
 

@@ -124,6 +124,54 @@ for comp in cilium argo-cd; do
 done
 
 
+echo "== approver allowlist =="
+# kubelet-csr-approver decides which node names and IPs may hold a serving certificate,
+# and it cannot read the tofu `nodes` map — the allowlist is a second copy of it. A node
+# added to main.tf but not to the values file gets its CSR *denied*, which stays invisible
+# until someone runs `kubectl logs` against that node. So the two are compared here, and
+# adding a node without widening the allowlist fails the PR instead of the cluster.
+for c in dev prod; do
+  vals="clusters/$c/values/kubelet-csr-approver.yaml"
+  main="tofu/clusters/$c/main.tf"
+  if [ ! -f "$vals" ] || [ ! -f "$main" ]; then
+    printf '  FAIL  %-5s %s or %s missing\n' "$c" "$vals" "$main"; FAIL=1; continue
+  fi
+
+  # `"prod-cp-1" = { vm_id = 201, ip = "10.42.5.201", ... }` -> `prod-cp-1 10.42.5.201`.
+  # This assumes one node per line, which is how the map is written and how `tofu fmt`
+  # keeps it. A node the parse drops still fails below as a missing IP, not silently.
+  parsed=$(sed -n '/^  nodes = {/,/^  }/p' "$main" \
+    | sed -nE 's/^[[:space:]]*"([^"]+)"[[:space:]]*=[[:space:]]*\{.*[[:space:]]ip[[:space:]]*=[[:space:]]*"([^"]+)".*/\1 \2/p')
+
+  # A parse that silently matched nothing would report perfect agreement.
+  if [ -z "$parsed" ]; then
+    printf '  FAIL  %-5s no nodes parsed out of %s — has the map changed shape?\n' "$c" "$main"; FAIL=1; continue
+  fi
+
+  regex=$(yq -r '.providerRegex' "$vals")
+  bad=0
+
+  while read -r name _; do
+    [ -z "$name" ] && continue
+    if ! [[ $name =~ $regex ]]; then
+      printf '  FAIL  %-5s node %s is not matched by providerRegex %s\n' "$c" "$name" "$regex"; bad=1
+    fi
+  done < <(echo "$parsed")
+
+  want=$(echo "$parsed" | awk '{print $2"/32"}' | sort | tr '\n' ' ')
+  got=$(yq -r '.providerIpPrefixes[]' "$vals" | sort | tr '\n' ' ')
+  if [ "$want" != "$got" ]; then
+    printf '  FAIL  %-5s providerIpPrefixes disagrees with %s\n' "$c" "$main"
+    printf '        tofu:   %s\n        values: %s\n' "$want" "$got"; bad=1
+  fi
+
+  if [ "$bad" -eq 0 ]; then
+    printf '  ok    %-5s %s node(s) match %s\n' "$c" "$(echo "$parsed" | wc -l | tr -d ' ')" "$main"
+  else
+    FAIL=1
+  fi
+done
+
 echo
 [ "$FAIL" -eq 0 ] && echo "all good" || echo "FAILURES ABOVE"
 exit $FAIL

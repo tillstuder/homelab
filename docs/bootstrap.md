@@ -8,7 +8,7 @@
     - [1Password Service Account Token](#1password-service-account-token)
 - [1. Create the Proxmox identity for OpenTofu](#1-create-the-proxmox-identity-for-opentofu)
 - [2. Build the cluster](#2-build-the-cluster)
-  - [Approve the kubelet serving certificates](#approve-the-kubelet-serving-certificates)
+  - [Kubelet serving certificates](#kubelet-serving-certificates)
 - [3. Install Cilium](#3-install-cilium)
 - [4. Install Argo CD](#4-install-argo-cd)
 - [5. Setup 1Password Token](#5-setup-1password-token)
@@ -130,10 +130,17 @@ Before proceeding, change your working directory to the repo root, so the relati
 cd ../../..
 ```
 
-### Approve the kubelet serving certificates
+### Kubelet serving certificates
 
 `talos/patches/kubelet.yaml` sets `serverTLSBootstrap: true`, so every kubelet requests a serving certificate through a CSR.
-Until they are approved, `kubectl logs`, `exec` and `top` fail with `remote error: tls: internal error`:
+
+Until they are signed, `kubectl logs`, `exec` and `top` fail with `remote error: tls: internal error`.
+
+`kubelet-csr-approver` will sign them automatically, but it is an Argo Application and Argo does not exist yet at this point.
+
+So the CSRs stay `Pending` for the rest of the bootstrap, and get approved on their own after the handover to Argo.
+
+They can be approved by hand if for example `kubectl logs` is needed before then:
 
 ```sh
 kubectl get csr -o name --field-selector spec.signerName=kubernetes.io/kubelet-serving \
@@ -190,6 +197,15 @@ kubectl -n argocd get applications -w
 Every Application should reach `Synced`/`Healthy`.
 
 `cilium` stays `Progressing` while any node is down, because it is a DaemonSet.
+
+Once `kubelet-csr-approver` is up, the kubelet CSRs left over from
+[2. Build the cluster](#kubelet-serving-certificates) are approved within seconds:
+
+```sh
+kubectl get csr --field-selector spec.signerName=kubernetes.io/kubelet-serving
+```
+
+All of them should read `Approved,Issued`, and `kubectl top nodes` should answer.
 
 > [!TIP]
 > Argo's initial admin password:

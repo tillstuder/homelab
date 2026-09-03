@@ -21,6 +21,7 @@ Ordering is expressed with `argocd.argoproj.io/sync-wave`:
 | `-100` | `root`, AppProjects                                     |
 | `-10`  | Cilium                                                  |
 | `-9`   | Cilium config                                           |
+| `-8`   | kubelet-csr-approver                                    |
 | `-5`   | local-path-provisioner                                  |
 | `0`    | cert-manager, External Secrets, Argo CD                 |
 | `1`    | ClusterIssuers, ClusterSecretStore                      |
