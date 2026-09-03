@@ -42,3 +42,12 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
 - **Zero Trust Networking**: TODO
 - **OS Isolation**: Kata Containers or similar.
 - **Virtual Machines**: KubeVirt
+- **Allow spreading of Talos nodes across physical hosts**: e.g.:
+  ```hcl
+  nodes = {
+    "prod-cp-1" = { vm_id = 201, ip = "10.42.5.201", pve_node = "pvebig" }
+    "prod-cp-2" = { vm_id = 202, ip = "10.42.5.202", pve_node = "pvesmall" }
+    "prod-cp-3" = { vm_id = 203, ip = "10.42.5.203", pve_node = "pvelaptop" }
+  }
+  ```
+- x
