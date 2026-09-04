@@ -1,3 +1,7 @@
+global:
+  networkPolicy:
+    create: false
+
 configs:
   params:
     server.insecure: true
@@ -16,6 +20,8 @@ controller:
     serviceMonitor:
       enabled: false
 server:
+  podLabels:
+    homelab.cyseclab.net/gateway-backend: "true" # Allows the Gateway to route traffic to this pod
   metrics:
     enabled: true
     serviceMonitor:

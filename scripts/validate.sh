@@ -111,6 +111,91 @@ if have tofu; then
   done
 fi
 
+echo "== network policy =="
+# The cluster-wide default-deny is the one object whose absence is invisible.
+# If it stops being rendered, every workload keeps working, Argo still reports
+# Synced/Healthy, and nothing anywhere goes red — the cluster is simply open
+# again. It carries Prune=false so a running cluster keeps it even then, but a
+# cluster rebuilt from a tree that lost the file would never have had it. So the
+# presence and the *shape* of it are asserted here instead of being trusted.
+NPDIR=infrastructure/base/network-policies
+if ! deny=$(kubectl kustomize "$NPDIR" 2>/dev/null \
+     | yq -e 'select(.kind=="CiliumClusterwideNetworkPolicy" and .metadata.name=="default-deny")' 2>/dev/null) \
+   || [ -z "$deny" ]; then
+  printf '  FAIL  %s renders no default-deny CiliumClusterwideNetworkPolicy\n' "$NPDIR"; FAIL=1
+else
+  bad=0
+  # `fromEndpoints: []` is an empty selector list and matches nothing, which is
+  # what makes this a deny. `[{}]` is a list holding the empty selector and
+  # matches everything, which would turn the floor into a cluster-wide allow-all
+  # that still looks exactly like a default-deny at a glance.
+  for dir in ingress:fromEndpoints egress:toEndpoints; do
+    d=${dir%%:*}; sel=${dir##*:}
+    n=$(echo "$deny" | yq ".spec.${d}[0].${sel} | length" 2>/dev/null)
+    if [ "$n" != "0" ]; then
+      printf '  FAIL  default-deny .spec.%s[0].%s has %s entries, must be empty or it allows all\n' "$d" "$sel" "$n"; bad=1
+    fi
+  done
+  if [ "$(echo "$deny" | yq '.spec.endpointSelector | length')" != "0" ]; then
+    printf '  FAIL  default-deny .spec.endpointSelector must be {} so it selects every pod\n'; bad=1
+  fi
+  if [ "$(echo "$deny" | yq '.metadata.annotations."argocd.argoproj.io/sync-options"')" != "Prune=false" ]; then
+    printf '  FAIL  default-deny is missing the Prune=false sync-option\n'; bad=1
+  fi
+  [ "$bad" -eq 0 ] && printf '  ok    default-deny renders, selects everything, allows nothing\n' || FAIL=1
+fi
+
+for c in dev prod; do
+  if kubectl kustomize "clusters/$c/platform" 2>/dev/null \
+     | yq -e 'select(.kind=="Application" and .spec.source.path=="'"$NPDIR"'")' >/dev/null 2>&1; then
+    printf '  ok    %-5s syncs %s\n' "$c" "$NPDIR"
+  else
+    printf '  FAIL  %-5s has no Application pointing at %s\n' "$c" "$NPDIR"; FAIL=1
+  fi
+done
+
+# argocd-repo-server is the only pod allowed out to the internet, and its
+# toFQDNs list is a second copy of the AppProjects' sourceRepos. Adding a chart
+# repo to a project without adding the host here fails that Application's next
+# sync with a connection error, so the two are compared.
+fq=$(yq -r 'select(.metadata.name=="argocd-repo-server") | .spec.egress[].toFQDNs[]? | (.matchName // .matchPattern)' \
+      infrastructure/base/argo-cd/networkpolicy.yaml 2>/dev/null | grep -v '^---$')
+for c in dev prod; do
+  bad=0
+  while read -r repo; do
+    [ -z "$repo" ] && continue
+    host=${repo#*://}; host=${host%%/*}
+    # An OCI registry is reached at its registry endpoint, not at the bare name
+    # the AppProject lists (docker.io -> registry-1.docker.io).
+    [ "$host" = "docker.io" ] && host=registry-1.docker.io
+    matched=0
+    while read -r pat; do
+      [ -z "$pat" ] && continue
+      # shellcheck disable=SC2254  # glob match against matchPattern is intended
+      case "$host" in $pat) matched=1; break ;; esac
+    done < <(echo "$fq")
+    if [ "$matched" -eq 0 ]; then
+      printf '  FAIL  %-5s sourceRepo %s (%s) is not allowed by argocd-repo-server toFQDNs\n' "$c" "$repo" "$host"; bad=1
+    fi
+  done < <(yq -r '.spec.sourceRepos[]?' "clusters/$c/projects.yaml" | grep -v '^---$' | sort -u)
+  [ "$bad" -eq 0 ] && printf '  ok    %-5s every sourceRepo host is in argocd-repo-server toFQDNs\n' "$c" || FAIL=1
+done
+
+# cert-manager's DNS-01 self-check bypasses CoreDNS, so it cannot be expressed
+# as a toFQDNs rule and is pinned by CIDR instead. That CIDR list and the
+# --dns01-recursive-nameservers flag have to name the same resolvers, or
+# issuance hangs on "not yet propagated" with nothing else to show for it.
+want=$(yq -r '.dns01RecursiveNameservers' infrastructure/base/cert-manager/values.yaml \
+       | tr ',' '\n' | sed 's/:.*//' | grep -v '^$' | sort | tr '\n' ' ')
+got=$(yq -r 'select(.metadata.name=="cert-manager") | .spec.egress[].toCIDR[]?' \
+       infrastructure/base/cert-manager/networkpolicy.yaml | grep -v '^---$' | sed 's|/32$||' | sort | tr '\n' ' ')
+if [ "$want" = "$got" ]; then
+  printf '  ok    cert-manager DNS-01 resolvers match its egress CIDRs\n'
+else
+  printf '  FAIL  cert-manager DNS-01 resolvers disagree with its egress policy\n'
+  printf '        values: %s\n        policy: %s\n' "$want" "$got"; FAIL=1
+fi
+
 echo "== approver allowlist =="
 # kubelet-csr-approver decides which node names and IPs may hold a serving certificate,
 # and it cannot read the tofu `nodes` map — the allowlist is a second copy of it. A node

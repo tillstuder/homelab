@@ -39,7 +39,6 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
 - **Backups**: The workload data on `local-path` is currently node-local and unreplicated.
 - **App Authentication Layer**: Using Envoy Gateway with a OIDC Provider.
 - **SAST and DAST Scanning**: Trivy, SonarQube, OWASP ZAP, etc.
-- **Zero Trust Networking**: TODO
 - **Security Review & Hardening** Talos, Kubernetes, ArgoCD, Envoy Gateway, etc.
 - **OS Isolation**: Kata Containers or similar.
 - **Virtual Machines**: KubeVirt

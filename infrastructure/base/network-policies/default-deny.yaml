@@ -1,0 +1,14 @@
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: default-deny
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false # keeps Argo from deleting this if it ever stops being rendered
+    argocd.argoproj.io/sync-wave: "1" # the allows in this Application are wave 0, so the deny goes in last
+spec:
+  description: "Cluster-wide default deny. Exceptions live next to each workload."
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints: []
+  egress:
+    - toEndpoints: []

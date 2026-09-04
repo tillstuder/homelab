@@ -28,6 +28,7 @@ Ordering is expressed with `argocd.argoproj.io/sync-wave`:
 | `5`    | Envoy Gateway (ships the Gateway API CRDs)              |
 | `6`    | GatewayClass, Gateway, wildcard Certificate, HTTP→HTTPS, Argo CD's HTTPRoute |
 | `10`   | Workloads                                               |
+| `20`   | Network policies: every allow, then the cluster-wide default-deny |
 
 ## Helm values
 

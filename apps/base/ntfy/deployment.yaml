@@ -13,6 +13,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: ntfy
+        homelab.cyseclab.net/gateway-backend: "true" # Allows the Gateway to route traffic to this pod
     spec:
       securityContext:
         runAsUser: 1000

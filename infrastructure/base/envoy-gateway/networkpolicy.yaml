@@ -1,0 +1,66 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: envoy-gateway
+  namespace: envoy-gateway-system
+spec:
+  description: "Envoy Gateway control plane: watches the apiserver, serves xDS to its proxies."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: envoy-gateway
+      control-plane: envoy-gateway
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: envoy
+            app.kubernetes.io/managed-by: envoy-gateway
+      toPorts:
+        - ports:
+            - port: "18000"
+              protocol: TCP
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: envoy-proxy
+  namespace: envoy-gateway-system
+spec:
+  description: "The shared gateway's proxy: public ingress in, labelled backends out."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: envoy
+      app.kubernetes.io/managed-by: envoy-gateway
+      gateway.envoyproxy.io/owning-gateway-name: gateway-shared
+  ingress:
+    - fromEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "10080"
+              protocol: TCP
+            - port: "10443"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: envoy-gateway
+            control-plane: envoy-gateway
+      toPorts:
+        - ports:
+            - port: "18000"
+              protocol: TCP
+    # Cilium needs both ends to agree, so the proxy needs egress to every backend as well as the backend needing ingress from the proxy.
+    # A workload opts in by labelling its pods: `homelab.cyseclab.net/gateway-backend: "true"`
+    - toEndpoints:
+        - matchLabels:
+            homelab.cyseclab.net/gateway-backend: "true"
+          matchExpressions:
+            - key: io.kubernetes.pod.namespace
+              operator: Exists

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://json.schemastore.org/kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./default-deny.yaml
+  - ./dns.yaml
+  - ./coredns.yaml
+  # Each component keeps its policy next to its own values.yaml:
+  - ../argo-cd
+  - ../cert-manager
+  - ../cilium
+  - ../envoy-gateway
+  - ../external-secrets
+  - ../kubelet-csr-approver

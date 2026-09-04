@@ -1,0 +1,242 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  description: "argocd-server: the UI/API. Reached through the gateway only."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: envoy-gateway-system
+            gateway.envoyproxy.io/owning-gateway-name: gateway-shared
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-repo-server
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-dex-server
+      toPorts:
+        - ports:
+            - port: "5556"
+              protocol: TCP
+            - port: "5557"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-application-controller
+  namespace: argocd
+spec:
+  description: "application-controller: reconciles Applications against the cluster."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-application-controller
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-repo-server
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  description: "repo-server: the only pod in the cluster that reaches the internet."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-repo-server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-server
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-application-controller
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-applicationset-controller
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-notifications-controller
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+    - toFQDNs:
+        # git
+        - matchName: "github.com"
+        - matchName: "codeload.github.com"
+        # Helm repos
+        - matchName: "helm.cilium.io"
+        - matchName: "charts.jetstack.io"
+        - matchName: "charts.external-secrets.io"
+        - matchPattern: "*.github.io"
+        # GitHub Pages chart repos
+        - matchName: "objects.githubusercontent.com"
+        - matchName: "raw.githubusercontent.com"
+        # OCI registry for the envoy-gateway chart (docker.io/envoyproxy)
+        - matchName: "registry-1.docker.io"
+        - matchName: "auth.docker.io"
+        - matchName: "production.cloudflare.docker.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-redis
+  namespace: argocd
+spec:
+  description: "redis: cache. Talks to nobody; three components talk to it."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-server
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-repo-server
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-application-controller
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-dex-server
+  namespace: argocd
+spec:
+  description: "dex: reached by argocd-server only. No upstream IdP configured yet."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-dex-server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/instance: argo-cd
+            app.kubernetes.io/name: argocd-server
+      toPorts:
+        - ports:
+            - port: "5556"
+              protocol: TCP
+            - port: "5557"
+              protocol: TCP
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-applicationset-controller
+  namespace: argocd
+spec:
+  description: "applicationset-controller: apiserver only. No ApplicationSets exist yet."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-applicationset-controller
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-notifications-controller
+  namespace: argocd
+spec:
+  description: "notifications-controller: apiserver only, until a notification sink exists."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-notifications-controller
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP

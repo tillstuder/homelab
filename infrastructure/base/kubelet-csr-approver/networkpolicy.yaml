@@ -1,0 +1,17 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kubelet-csr-approver
+  namespace: kubelet-csr-approver
+spec:
+  description: "kubelet-csr-approver: watches and approves kubelet serving CSRs."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: kubelet-csr-approver
+  egress:
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
+              protocol: TCP
