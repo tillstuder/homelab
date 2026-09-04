@@ -154,7 +154,7 @@ Install it with **the same value files Argo will use**, so the Application adopt
 ```sh
 grep -A1 'chart: cilium' clusters/prod/platform/cilium.yaml
 
-helm install cilium cilium --repo https://helm.cilium.io --version 1.20.1 \
+helm install cilium cilium --repo https://helm.cilium.io --version --version <from the grep above>  \
   --namespace kube-system \
   -f infrastructure/base/cilium/values.yaml \
   -f clusters/prod/values/cilium.yaml
@@ -170,7 +170,7 @@ Same approach, the value files the Application will later use:
 grep -A1 'chart: argo-cd' clusters/prod/platform/argo-cd.yaml
 
 helm install argo-cd argo-cd \
-  --repo https://argoproj.github.io/argo-helm --version 10.4.0 \
+  --repo https://argoproj.github.io/argo-helm --version <from the grep above> \
   --namespace argocd --create-namespace \
   -f infrastructure/base/argo-cd/values.yaml \
   -f clusters/prod/values/argo-cd.yaml

@@ -111,19 +111,6 @@ if have tofu; then
   done
 fi
 
-echo "== bootstrap drift =="
-# docs/bootstrap.md helm-installs cilium and argo-cd with explicit versions.
-# They must match the Applications, or Argo's first sync would fight the release
-# the bootstrap just created instead of adopting it.
-for comp in cilium argo-cd; do
-  want=$(yq -r '.spec.sources[] | select(.chart) | .targetRevision' "clusters/prod/platform/$comp.yaml")
-  got=$(grep --color=never -A2 "helm install $comp" docs/bootstrap.md \
-        | grep --color=never -o -- '--version [^ ]*' | awk '{print $2}' | head -1)
-  if [ "$want" = "$got" ]; then printf '  ok    %-10s bootstrap=%s application=%s\n' "$comp" "$got" "$want"
-  else printf '  FAIL  %-10s bootstrap=%s application=%s\n' "$comp" "${got:-<none>}" "$want"; FAIL=1; fi
-done
-
-
 echo "== approver allowlist =="
 # kubelet-csr-approver decides which node names and IPs may hold a serving certificate,
 # and it cannot read the tofu `nodes` map — the allowlist is a second copy of it. A node
