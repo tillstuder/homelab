@@ -1,38 +1,55 @@
 # Day-2 operations <!-- omit in toc -->
 
-- [Talos or Kubernetes upgrade](#talos-or-kubernetes-upgrade)
-  - [1. Render the new version into the machine config](#1-render-the-new-version-into-the-machine-config)
-  - [2. Upgrade Talos, one node at a time](#2-upgrade-talos-one-node-at-a-time)
-  - [3. Upgrade Kubernetes](#3-upgrade-kubernetes)
+- [Kubernetes upgrade](#kubernetes-upgrade)
+  - [dev](#dev)
+  - [prod](#prod)
+- [Talos upgrade](#talos-upgrade)
 - [Re-issuing client certificates](#re-issuing-client-certificates)
 - [Resizing a node](#resizing-a-node)
 - [Adding a cluster node](#adding-a-cluster-node)
 - [Removing a cluster node](#removing-a-cluster-node)
 - [Adopting existing DNS records](#adopting-existing-dns-records)
 
-## Talos or Kubernetes upgrade
+## Kubernetes upgrade
 
-Both versions live in `talos/talenv.yaml` and both clusters read it, so a bump is one file:
+> [!WARNING]
+> Don't skip a Kubernetes minor version.
+> `v1.35 -> v1.36 -> v1.37`, one at a time, with the cluster healthy in between.
 
-```yaml
-# renovate: datasource=github-releases depName=siderolabs/talos
-talosVersion: "v1.13.9"
-# renovate: datasource=github-releases depName=kubernetes/kubernetes
-kubernetesVersion: "v1.36.3"
-```
-
-### 1. Render the new version into the machine config
+### dev
 
 ```sh
+cd tofu/clusters/dev
+export TALOSCONFIG=$PWD/.credentials/talosconfig
+export KUBECONFIG=$PWD/.credentials/kubeconfig
+talosctl -n 10.42.5.210 upgrade-k8s --to v1.36.4
+op run --env-file=.env -- tofu apply
+kubectl get nodes -o wide
+kubectl -n kube-system get pods
+```
+
+### prod
+
+```sh
+cd tofu/clusters/prod
+export TALOSCONFIG=$PWD/.credentials/talosconfig
+export KUBECONFIG=$PWD/.credentials/kubeconfig
+talosctl -n 10.42.5.201 upgrade-k8s --to v1.36.4
+op run --env-file=.env -- tofu apply
+kubectl get nodes -o wide
+kubectl -n kube-system get pods
+```
+
+## Talos upgrade
+
+First render the new installer into the machine config:
+
+```sh
+cd tofu/clusters/prod
 op run --env-file=.env -- tofu apply
 ```
 
-Expect exactly two kinds of change:
-
-- `proxmox_download_file.talos` replaced, because the ISO URL and name carry the version
-- `talos_machine_configuration_apply.this` updated per node, because `machine.install.image` points at the new Image Factory installer
-
-### 2. Upgrade Talos, one node at a time
+Then upgrade the nodes, one at a time:
 
 ```sh
 export TALOSCONFIG=$PWD/.credentials/talosconfig
@@ -42,6 +59,7 @@ talosctl -n 10.42.5.201 upgrade --image "$INSTALLER"
 ```
 
 Talos cordons and drains the node, writes the new release, reboots, and applies the staged config on the way back up.
+
 Wait for it to come back healthy before touching the next one:
 
 ```sh
@@ -58,25 +76,6 @@ Then repeat for `10.42.5.202` and `10.42.5.203`.
 > ```sh
 > talosctl -n 10.42.5.210 upgrade --image "$INSTALLER" --preserve
 > ```
-
-### 3. Upgrade Kubernetes
-
-Once every node runs the new Talos, run the following command against any control plane node:
-
-```sh
-talosctl -n 10.42.5.201 upgrade-k8s --to v1.36.3
-```
-
-It rolls the control plane static pods and the kubelets node by node and updates the Talos-managed add-ons.
-
-```sh
-kubectl get nodes -o wide
-kubectl -n kube-system get pods
-```
-
-> [!WARNING]
-> Don't skip a Kubernetes minor version.
-> `v1.35 -> v1.36 -> v1.37`, one at a time, with the cluster healthy in between.
 
 ## Re-issuing client certificates
 
