@@ -6,7 +6,6 @@
     ':semanticCommits',
   ],
   timezone: 'Europe/Zurich',
-  schedule: ['* 0-6 * * *'],
   // The `argocd` manager parses Application/ApplicationSet manifests natively and
   // bumps `spec.source(s).targetRevision` for Helm chart sources. It ships with no
   // default file pattern at all — without `managerFilePatterns` the manager matches
