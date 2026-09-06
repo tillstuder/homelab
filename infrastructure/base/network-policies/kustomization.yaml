@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ./default-deny.yaml
   - ./dns.yaml
+  - ./apiserver.yaml
   - ./coredns.yaml
   # Each component keeps its policy next to its own values.yaml:
   - ../argo-cd
@@ -11,4 +12,3 @@ resources:
   - ../cilium
   - ../envoy-gateway
   - ../external-secrets
-  - ../kubelet-csr-approver

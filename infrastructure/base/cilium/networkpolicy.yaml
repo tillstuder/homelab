@@ -52,9 +52,3 @@ spec:
         - ports:
             - port: "4245"
               protocol: TCP
-    - toEntities:
-        - kube-apiserver
-      toPorts:
-        - ports:
-            - port: "6443"
-              protocol: TCP
