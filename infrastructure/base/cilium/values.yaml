@@ -44,6 +44,8 @@ hubble:
       enabled: true
       serviceMonitor:
         enabled: false
+  ui:
+    enabled: true
   metrics:
     enableOpenMetrics: true
     serviceMonitor:

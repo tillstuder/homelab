@@ -8,6 +8,15 @@ spec:
   endpointSelector:
     matchLabels:
       k8s-app: hubble-relay
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: hubble-ui
+      toPorts:
+        - ports:
+            - port: "4245"
+              protocol: TCP
   egress:
     - toEntities:
         - host
@@ -15,4 +24,37 @@ spec:
       toPorts:
         - ports:
             - port: "4244"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hubble-ui
+  namespace: kube-system
+spec:
+  description: "hubble-ui: reads flows from relay, topology from the apiserver. Not routed; reached with kubectl port-forward."
+  endpointSelector:
+    matchLabels:
+      k8s-app: hubble-ui
+  ingress:
+    - fromEntities:
+        - host
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: hubble-relay
+      toPorts:
+        - ports:
+            - port: "4245"
+              protocol: TCP
+    - toEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "6443"
               protocol: TCP
