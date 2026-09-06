@@ -34,12 +34,13 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
 
 ## ToDos
 
-- **Monitoring**: Alloy, Loki, Grafana
+- **Monitoring & Observability**: Alloy, Loki, Grafana
 - **Notifications**: So for example a failed Argo sync is a push notification to my phone.
 - **Backups**: The workload data on `local-path` is currently node-local and unreplicated.
 - **App Authentication Layer**: Using Envoy Gateway with a OIDC Provider.
 - **SAST and DAST Scanning**: Trivy, SonarQube, OWASP ZAP, etc.
-- **Security Review & Hardening** Talos, Kubernetes, ArgoCD, Envoy Gateway, etc.
+- **Security Review & Hardening** Kubescape, etc.
+- **Runtime Security**: Tetragon, Falco, etc.
 - **OS Isolation**: Kata Containers or similar.
 - **Virtual Machines**: KubeVirt
 - **Allow spreading of Talos nodes across physical hosts**: e.g.:
@@ -50,4 +51,3 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
     "prod-cp-3" = { vm_id = 203, ip = "10.42.5.203", pve_node = "pvelaptop" }
   }
   ```
-- x
