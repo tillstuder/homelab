@@ -7,6 +7,7 @@
     - [Talos](#talos)
     - [1Password Service Account Token](#1password-service-account-token)
     - [Grafana](#grafana)
+    - [Argo CD](#argo-cd)
 - [1. Create the Proxmox identity for OpenTofu](#1-create-the-proxmox-identity-for-opentofu)
 - [2. Build the cluster](#2-build-the-cluster)
   - [Kubelet serving certificates](#kubelet-serving-certificates)
@@ -89,6 +90,20 @@ Grafana's admin account is created in the cluster's vault as `grafana`:
 ```sh
 op item create --category=Login --title=grafana --vault=homelab-prod \
   --generate-password='letters,digits,symbols,32' username=admin
+```
+
+#### Argo CD
+
+Argo CD's admin account works the same way, except that Argo stores the password bcrypt-hashed.
+So the item carries both: `password` for you to log in with, `password-bcrypt` for the cluster:
+
+```sh
+op item create --category=Login --title=argocd --vault=homelab-prod \
+  --generate-password='letters,digits,symbols,32' username=admin
+
+op item edit argocd --vault=homelab-prod "password-bcrypt[password]=$(
+  htpasswd -nbBC 10 '' "$(op read 'op://homelab-prod/argocd/password')" | tr -d ':\n' | sed 's/^\$2y/$2a/'
+)"
 ```
 
 ## 1. Create the Proxmox identity for OpenTofu
@@ -229,7 +244,11 @@ kubectl get csr --field-selector spec.signerName=kubernetes.io/kubelet-serving
 All of them should read `Approved,Issued`, and `kubectl top nodes` should answer.
 
 > [!TIP]
-> Argo's initial admin password:
+> Once `argo-cd-secret` has synced, the admin password is the one from the vault:
+> ```sh
+> op read 'op://homelab-prod/argocd/password'
+> ```
+> Until then, Argo is still on the password it generated for itself at install time:
 > ```sh
 > kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
 > ```

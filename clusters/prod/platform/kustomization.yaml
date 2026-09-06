@@ -5,6 +5,7 @@ resources:
   - ./alloy-config.yaml
   - ./alloy.yaml
   - ./argo-cd-config.yaml
+  - ./argo-cd-secret.yaml
   - ./argo-cd.yaml
   - ./cert-manager-config.yaml
   - ./cert-manager.yaml

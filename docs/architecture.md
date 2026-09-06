@@ -26,6 +26,7 @@ Ordering is expressed with `argocd.argoproj.io/sync-wave`:
 | `-5`   | local-path-provisioner                                  |
 | `0`    | cert-manager, External Secrets, Argo CD                 |
 | `1`    | ClusterIssuers, ClusterSecretStore                      |
+| `2`    | Argo CD's admin secret, merged into `argocd-secret` once the store is up |
 | `5`    | Envoy Gateway (ships the Gateway API CRDs)              |
 | `6`    | GatewayClass, Gateway, wildcard Certificate, HTTP→HTTPS, Argo CD's HTTPRoute |
 | `9`    | What wave 10 cannot start without: Alloy's config, Grafana's admin secret |
