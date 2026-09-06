@@ -10,6 +10,14 @@ spec:
       app.kubernetes.io/instance: envoy-gateway
       control-plane: envoy-gateway
   ingress:
+    - fromEntities:
+        - kube-apiserver
+        - remote-node
+        - host
+      toPorts:
+        - ports:
+            - port: "9443"
+              protocol: TCP
     - fromEndpoints:
         - matchLabels:
             app.kubernetes.io/name: envoy

@@ -58,7 +58,9 @@ route:
   main:
     enabled: true
     parentRefs:
-      - name: gateway-shared
+      - group: gateway.networking.k8s.io
+        kind: Gateway
+        name: gateway-shared
         namespace: envoy-gateway-system
         sectionName: https
 

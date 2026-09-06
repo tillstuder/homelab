@@ -7,7 +7,10 @@ metadata:
     argocd.argoproj.io/sync-wave: "1" # the allows in this Application are wave 0, so the deny goes in last
 spec:
   description: "Cluster-wide default deny. Exceptions live next to each workload."
-  endpointSelector: {}
+  endpointSelector:
+    matchExpressions:
+      - key: io.kubernetes.pod.namespace
+        operator: Exists
   ingress:
     - fromEndpoints: []
   egress:
