@@ -134,13 +134,12 @@ spec:
         - matchName: "charts.jetstack.io"
         - matchName: "charts.external-secrets.io"
         - matchPattern: "*.github.io"
-        # GitHub Pages chart repos
-        - matchName: "objects.githubusercontent.com"
-        - matchName: "raw.githubusercontent.com"
-        # OCI registry for the envoy-gateway chart (docker.io/envoyproxy)
+        - matchPattern: "*.githubusercontent.com"
+        # OCI registry for the envoy-gateway chart (docker.io/envoyproxy).
+        # Manifests come from the registry, blobs from its CloudFront edge.
         - matchName: "registry-1.docker.io"
         - matchName: "auth.docker.io"
-        - matchName: "production.cloudflare.docker.com"
+        - matchName: "production.cloudfront.docker.com"
       toPorts:
         - ports:
             - port: "443"
