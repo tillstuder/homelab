@@ -6,6 +6,7 @@
     - [Cloudflare](#cloudflare)
     - [Talos](#talos)
     - [1Password Service Account Token](#1password-service-account-token)
+    - [Grafana](#grafana)
 - [1. Create the Proxmox identity for OpenTofu](#1-create-the-proxmox-identity-for-opentofu)
 - [2. Build the cluster](#2-build-the-cluster)
   - [Kubelet serving certificates](#kubelet-serving-certificates)
@@ -81,6 +82,15 @@ unset OP_TOKEN
 > To revoke or rotate these tokens, visit:
 > https://my.1password.com/developer-tools/active/service-accounts
 
+#### Grafana
+
+Grafana's admin account is created in the cluster's vault as `grafana`:
+
+```sh
+op item create --category=Login --title=grafana --vault=homelab-prod \
+  --generate-password='letters,digits,symbols,32' username=admin
+```
+
 ## 1. Create the Proxmox identity for OpenTofu
 
 Do this once per Proxmox host.
@@ -149,7 +159,18 @@ kubectl get csr -o name --field-selector spec.signerName=kubernetes.io/kubelet-s
 
 ## 3. Install Cilium
 
-Install it with **the same value files Argo will use**, so the Application adopts the release later instead of fighting it:
+As a pre-requisite, we have to install the ServiceMonitor CRDs first:
+
+```sh
+grep -A1 'chart: prometheus-operator-crds' clusters/prod/platform/prometheus-operator-crds.yaml
+
+helm install prometheus-operator-crds prometheus-operator-crds \
+  --repo https://prometheus-community.github.io/helm-charts --version <from the grep above> \
+  --namespace kube-system \
+  -f infrastructure/base/prometheus-operator-crds/values.yaml
+```
+
+Now you can install Cilium with **the same value files Argo will use**, so the Application adopts the release later instead of fighting it:
 
 ```sh
 grep -A1 'chart: cilium' clusters/prod/platform/cilium.yaml

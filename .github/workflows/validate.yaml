@@ -37,5 +37,12 @@ jobs:
           curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
             | sudo tar -xz -C /usr/local/bin kubeconform
 
+      - name: Install alloy
+        run: |
+          curl -sSL -o alloy.zip https://github.com/grafana/alloy/releases/download/v1.19.2/alloy-linux-amd64.zip
+          unzip -q alloy.zip
+          sudo install -m 0755 alloy-linux-amd64 /usr/local/bin/alloy
+          rm alloy.zip alloy-linux-amd64
+
       - name: Render manifests and charts, then validate the OpenTofu roots
         run: ./scripts/validate.sh

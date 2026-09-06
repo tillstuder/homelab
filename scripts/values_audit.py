@@ -17,8 +17,10 @@ import sys
 # while *also* declaring defaults of their own. Helm's schema cannot express
 # that, so they are listed here by hand.
 FREEFORM = {
-    ("configs", "params"),  # argo-cd: arbitrary argocd-cmd-params-cm entries
-    ("configs", "cm"),      # argo-cd: arbitrary argocd-cm entries
+    ("configs", "params"),        # argo-cd: arbitrary argocd-cmd-params-cm entries
+    ("configs", "cm"),            # argo-cd: arbitrary argocd-cm entries
+    ("grafana.ini",),             # grafana: the whole grafana.ini, section by section
+    ("loki", "limits_config"),    # loki: any limit Loki itself accepts, not just the seeded ones
 }
 
 

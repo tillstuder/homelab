@@ -55,11 +55,13 @@ while read -r app; do
   if [[ "$repo" == http* ]]; then ref=("$chart" --repo "$repo")
   else ref=("oci://$repo/$chart"); fi
 
+  # A chart with no values file of its own leaves `args` empty, and an empty
+  # array is an *unset* variable to bash 3.2, which `set -u` then kills.
   if helm template "$name" "${ref[@]}" --version "$ver" --include-crds \
-       -n "$ns" "${args[@]}" >/dev/null 2>"${TMPDIR:-/tmp}/helm.err"; then
+       -n "$ns" ${args[@]+"${args[@]}"} >/dev/null 2>"${TMPDIR:-/tmp}/helm.err"; then
     printf '  ok    %-22s %s@%s\n' "$name" "$chart" "$ver"
     # Stash coordinates so the values-key pass does not re-resolve them.
-    printf '%s\t%s\t%s\t%s\t%s\n' "$(echo "$app" | cut -d/ -f2)" "$name" "${ref[*]}" "$ver" "${args[*]}" >> "$WORK/charts.tsv"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$(echo "$app" | cut -d/ -f2)" "$name" "${ref[*]}" "$ver" "${args[*]-}" >> "$WORK/charts.tsv"
   else
     printf '  FAIL  %-22s %s@%s\n%s\n' "$name" "$chart" "$ver" \
       "$(head -5 "${TMPDIR:-/tmp}/helm.err" | sed 's/^/        /')"; FAIL=1
@@ -107,6 +109,27 @@ if have tofu; then
       printf '  ok    %s\n' "$name"
     else
       printf '  FAIL  %-6s validate\n%s\n' "$name" "$(echo "$out" | head -8 | sed 's/^/        /')"; FAIL=1
+    fi
+  done
+fi
+
+echo "== alloy =="
+# The Alloy config is a program, and nothing else here reads it: kustomize
+# embeds it as an opaque string and Helm never sees it at all. A component
+# reference that does not resolve renders and applies perfectly, then crash-loops
+# in the cluster. `alloy validate` is the only thing that catches that here.
+ALLOYDIR=infrastructure/base/alloy/config
+if have alloy; then
+  if out=$(alloy validate "$ALLOYDIR" 2>&1); then
+    printf '  ok    %s\n' "$ALLOYDIR"
+  else
+    printf '  FAIL  %s\n%s\n' "$ALLOYDIR" "$(echo "$out" | head -12 | sed 's/^/        /')"; FAIL=1
+  fi
+  for f in "$ALLOYDIR"/*.alloy; do
+    if diff -q "$f" <(alloy fmt "$f") >/dev/null 2>&1; then
+      printf '  ok    %s is formatted\n' "$f"
+    else
+      printf '  FMT   %s is not canonical, run: alloy fmt -w %s\n' "$f" "$f"; FAIL=1
     fi
   done
 fi

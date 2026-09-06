@@ -7,8 +7,15 @@ resources:
   - ./apiserver.yaml
   - ./coredns.yaml
   # Each component keeps its policy next to its own values.yaml:
+  - ../alloy
   - ../argo-cd
   - ../cert-manager
   - ../cilium
   - ../envoy-gateway
   - ../external-secrets
+  - ../grafana
+  - ../kube-state-metrics
+  - ../kubelet-csr-approver
+  - ../loki
+  - ../node-exporter
+  - ../prometheus

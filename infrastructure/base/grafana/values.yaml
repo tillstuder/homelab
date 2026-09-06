@@ -1,0 +1,76 @@
+replicas: 1
+deploymentStrategy:
+  type: Recreate
+
+extraLabels:
+  homelab.cyseclab.net/gateway-backend: "true"
+
+admin:
+  existingSecret: grafana-admin
+  userKey: username
+  passwordKey: password
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc.cluster.local:9090
+        isDefault: true
+      - name: Loki
+        uid: loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
+
+sidecar:
+  dashboards:
+    enabled: true
+  resources:
+    requests:
+      cpu: 10m
+      memory: 48Mi
+    limits:
+      memory: 128Mi
+
+grafana.ini:
+  analytics:
+    check_for_updates: false
+    reporting_enabled: false
+  news:
+    news_feed_enabled: false
+  auth.anonymous:
+    enabled: false
+  auth.basic:
+    enabled: true
+  users:
+    allow_sign_up: false
+    auto_assign_org_role: Viewer
+
+route:
+  main:
+    enabled: true
+    parentRefs:
+      - name: gateway-shared
+        namespace: envoy-gateway-system
+        sectionName: https
+
+serviceMonitor:
+  enabled: true
+
+testFramework:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 192Mi
+  limits:
+    memory: 512Mi

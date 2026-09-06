@@ -1,0 +1,158 @@
+prometheus.remote_write "local" {
+	endpoint {
+		url = "http://prometheus-server.monitoring.svc.cluster.local:9090/api/v1/write"
+	}
+}
+
+prometheus.operator.servicemonitors "all" {
+	forward_to      = [prometheus.remote_write.local.receiver]
+	kubernetes_role = "endpointslice"
+
+	clustering {
+		enabled = true
+	}
+}
+
+prometheus.operator.podmonitors "all" {
+	forward_to      = [prometheus.remote_write.local.receiver]
+	kubernetes_role = "endpointslice"
+
+	clustering {
+		enabled = true
+	}
+}
+
+discovery.kubernetes "annotated" {
+	role = "pod"
+
+	namespaces {
+		names = ["envoy-gateway-system", "monitoring"]
+	}
+}
+
+discovery.relabel "annotated" {
+	targets = discovery.kubernetes.annotated.targets
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+		regex         = "true"
+		action        = "keep"
+	}
+
+	rule {
+		source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+		regex         = "([^:]+)(?::\\d+)?;(\\d+)"
+		replacement   = "$1:$2"
+		target_label  = "__address__"
+		action        = "replace"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_namespace"]
+		target_label  = "namespace"
+		action        = "replace"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_name"]
+		target_label  = "pod"
+		action        = "replace"
+	}
+}
+
+prometheus.scrape "annotated" {
+	job_name   = "annotated-pods"
+	targets    = discovery.relabel.annotated.output
+	forward_to = [prometheus.remote_write.local.receiver]
+
+	clustering {
+		enabled = true
+	}
+}
+
+prometheus.scrape "apiserver" {
+	job_name = "apiserver"
+
+	targets = [
+		{"__address__" = "kubernetes.default.svc:443"},
+	]
+
+	scheme            = "https"
+	metrics_path      = "/metrics"
+	bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+	tls_config {
+		ca_file     = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+		server_name = "kubernetes"
+	}
+
+	clustering {
+		enabled = true
+	}
+
+	forward_to = [prometheus.remote_write.local.receiver]
+}
+
+discovery.kubernetes "nodes" {
+	role = "node"
+}
+
+discovery.relabel "kubelet" {
+	targets = discovery.kubernetes.nodes.targets
+
+	rule {
+		source_labels = ["__meta_kubernetes_node_name"]
+		target_label  = "node"
+		action        = "replace"
+	}
+}
+
+discovery.relabel "cadvisor" {
+	targets = discovery.kubernetes.nodes.targets
+
+	rule {
+		target_label = "__metrics_path__"
+		replacement  = "/metrics/cadvisor"
+		action       = "replace"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_node_name"]
+		target_label  = "node"
+		action        = "replace"
+	}
+}
+
+prometheus.scrape "kubelet" {
+	job_name          = "kubelet"
+	targets           = discovery.relabel.kubelet.output
+	scheme            = "https"
+	bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+	tls_config {
+		ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	}
+
+	clustering {
+		enabled = true
+	}
+
+	forward_to = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.scrape "cadvisor" {
+	job_name          = "kubelet-cadvisor"
+	targets           = discovery.relabel.cadvisor.output
+	scheme            = "https"
+	bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+	tls_config {
+		ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+	}
+
+	clustering {
+		enabled = true
+	}
+
+	forward_to = [prometheus.remote_write.local.receiver]
+}

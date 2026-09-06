@@ -1,0 +1,22 @@
+fullnameOverride: node-exporter
+
+hostNetwork: false
+
+prometheus:
+  monitor:
+    enabled: true
+    jobLabel: app.kubernetes.io/instance
+    relabelings:
+      - sourceLabels: [__meta_kubernetes_pod_node_name]
+        targetLabel: instance
+        action: replace
+      - sourceLabels: [__meta_kubernetes_pod_node_name]
+        targetLabel: node
+        action: replace
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 96Mi

@@ -1,0 +1,39 @@
+alloy:
+  configMap:
+    create: false
+    name: alloy-config
+    key: "."
+  clustering:
+    enabled: true
+  enableReporting: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 192Mi
+    limits:
+      memory: 512Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    runAsUser: 473
+    runAsGroup: 473
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+
+crds:
+  create: false
+
+controller:
+  type: statefulset
+  replicas: 1
+
+configReloader:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+serviceMonitor:
+  enabled: true

@@ -1,0 +1,19 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kubelet-csr-approver
+  namespace: kubelet-csr-approver
+spec:
+  description: "kubelet-csr-approver: watches and approves kubelet serving CSRs."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: kubelet-csr-approver
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

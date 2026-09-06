@@ -19,6 +19,7 @@ Ordering is expressed with `argocd.argoproj.io/sync-wave`:
 | Wave   | What                                                    |
 | ------ | ------------------------------------------------------- |
 | `-100` | `root`, AppProjects                                     |
+| `-20`  | prometheus-operator CRDs, so a chart that renders a ServiceMonitor has something to render it against |
 | `-10`  | Cilium                                                  |
 | `-9`   | Cilium config                                           |
 | `-8`   | kubelet-csr-approver                                    |
@@ -27,7 +28,8 @@ Ordering is expressed with `argocd.argoproj.io/sync-wave`:
 | `1`    | ClusterIssuers, ClusterSecretStore                      |
 | `5`    | Envoy Gateway (ships the Gateway API CRDs)              |
 | `6`    | GatewayClass, Gateway, wildcard Certificate, HTTP→HTTPS, Argo CD's HTTPRoute |
-| `10`   | Workloads                                               |
+| `9`    | What wave 10 cannot start without: Alloy's config, Grafana's admin secret |
+| `10`   | Workloads, and the monitoring stack                     |
 | `20`   | Network policies: every allow, then the cluster-wide default-deny |
 
 ## Helm values

@@ -18,6 +18,14 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "8083"
+              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:
@@ -57,6 +65,15 @@ spec:
     matchLabels:
       app.kubernetes.io/instance: argo-cd
       app.kubernetes.io/name: argocd-application-controller
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "8082"
+              protocol: TCP
   egress:
     - toEndpoints:
         - matchLabels:
@@ -103,6 +120,14 @@ spec:
       toPorts:
         - ports:
             - port: "8081"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "8084"
               protocol: TCP
   egress:
     - toEndpoints:
@@ -159,6 +184,14 @@ spec:
         - ports:
             - port: "6379"
               protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "9121"
+              protocol: TCP
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -181,4 +214,46 @@ spec:
             - port: "5556"
               protocol: TCP
             - port: "5557"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-applicationset-controller
+  namespace: argocd
+spec:
+  description: "applicationset-controller: apiserver via the baseline. No ApplicationSets exist yet."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-applicationset-controller
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argocd-notifications-controller
+  namespace: argocd
+spec:
+  description: "notifications-controller: apiserver via the baseline, until a notification sink exists."
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/instance: argo-cd
+      app.kubernetes.io/name: argocd-notifications-controller
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "9001"
               protocol: TCP

@@ -8,4 +8,4 @@ leaderElection: true
 metrics:
   enable: true
   serviceMonitor:
-    enabled: false
+    enabled: true

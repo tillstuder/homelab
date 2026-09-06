@@ -34,8 +34,7 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
 
 ## ToDos
 
-- **Monitoring & Observability**: Alloy, Loki, Grafana
-- **Notifications**: So for example a failed Argo sync is a push notification to my phone.
+- **Alerting**: So for example a failed Argo sync is a push notification to my phone.
 - **Backups**: The workload data on `local-path` is currently node-local and unreplicated.
 - **App Authentication Layer**: Using Envoy Gateway with a OIDC Provider.
 - **SAST and DAST Scanning**: Trivy, SonarQube, OWASP ZAP, etc.

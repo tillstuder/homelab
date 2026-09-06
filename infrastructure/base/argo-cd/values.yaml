@@ -18,14 +18,14 @@ controller:
   metrics:
     enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true
 server:
   podLabels:
     homelab.cyseclab.net/gateway-backend: "true" # Allows the Gateway to route traffic to this pod
   metrics:
     enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true
 repoServer:
   livenessProbe:
     timeoutSeconds: 5
@@ -34,14 +34,19 @@ repoServer:
   metrics:
     enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true
 applicationSet:
   metrics:
     enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true
 redis:
   metrics:
     enabled: true
     serviceMonitor:
-      enabled: false
+      enabled: true
+notifications:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true

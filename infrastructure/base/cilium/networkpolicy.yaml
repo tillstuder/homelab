@@ -17,6 +17,14 @@ spec:
         - ports:
             - port: "4245"
               protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alloy
+      toPorts:
+        - ports:
+            - port: "9966"
+              protocol: TCP
   egress:
     - toEntities:
         - host

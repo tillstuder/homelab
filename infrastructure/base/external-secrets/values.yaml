@@ -6,4 +6,4 @@ crds:
 replicaCount: 1
 
 serviceMonitor:
-  enabled: false
+  enabled: true

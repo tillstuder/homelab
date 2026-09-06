@@ -1,0 +1,52 @@
+server:
+  extraFlags:
+    - web.enable-lifecycle
+    - storage.tsdb.wal-compression
+    - web.enable-remote-write-receiver
+  tsdb:
+    out_of_order_time_window: 10m
+  retention: 15d
+  retentionSize: 4GB
+  persistentVolume:
+    size: 10Gi
+  service:
+    servicePort: 9090
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1536Mi
+
+scrapeConfigs:
+  kubernetes-api-servers:
+    enabled: false
+  kubernetes-nodes:
+    enabled: false
+  kubernetes-nodes-cadvisor:
+    enabled: false
+  kubernetes-service-endpoints:
+    enabled: false
+  kubernetes-service-endpoints-slow:
+    enabled: false
+  kubernetes-services:
+    enabled: false
+  kubernetes-pods:
+    enabled: false
+  kubernetes-pods-slow:
+    enabled: false
+  prometheus-pushgateway:
+    enabled: false
+
+configmapReload:
+  prometheus:
+    enabled: false
+
+alertmanager:
+  enabled: false
+kube-state-metrics:
+  enabled: false
+prometheus-node-exporter:
+  enabled: false
+prometheus-pushgateway:
+  enabled: false
