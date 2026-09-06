@@ -15,6 +15,7 @@ resources:
   - ./envoy-gateway.yaml
   - ./external-secrets-config.yaml
   - ./external-secrets.yaml
+  - ./grafana-dashboards.yaml
   - ./grafana-secret.yaml
   - ./grafana.yaml
   - ./kube-state-metrics.yaml
