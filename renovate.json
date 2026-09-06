@@ -7,18 +7,11 @@
   ],
   "timezone": "Europe/Zurich",
   "argocd": {
-    "description": [
-      "The `argocd` manager parses Application/ApplicationSet manifests natively and bumps `spec.source(s).targetRevision` for Helm chart sources.",
-      "It ships with no default file pattern at all — without `managerFilePatterns` the manager matches nothing, so this block is required rather than a refinement of a default."
-    ],
     "managerFilePatterns": ["/clusters/.+/(platform|apps)/.+\\.yaml$/"]
   },
   "packageRules": [
     {
-      "description": [
-        "DEV soaks everything first, merge without asking.",
-        "Automerge stays PR-based on purpose. `automergeType: branch` would push straight to a `renovate/*` branch and merge without opening a PR, and `.github/workflows/validate.yaml` only triggers on `pull_request` and on pushes to `main` — so nothing would ever run `scripts/validate.sh` before the merge landed, and Renovate would read the absence of checks as green."
-      ],
+      "description": "DEV soaks everything first, merge without asking.",
       "matchFileNames": ["clusters/dev/**"],
       "automerge": true,
       "minimumReleaseAge": "0 days",
@@ -32,10 +25,7 @@
       "commitMessagePrefix": "prod:"
     },
     {
-      "description": [
-        "Shared base manifests reach prod immediately, so they get prod rules.",
-        "`base/` is kustomized by both overlays, so a bump here reaches prod on the same merge that reaches dev — there is no dev-first soak to lean on. Give it prod's caution instead of the default (no aging, no review)."
-      ],
+      "description": "Shared base manifests reach prod immediately, so they get prod rules.",
       "matchFileNames": ["apps/base/**", "infrastructure/base/**"],
       "automerge": false,
       "minimumReleaseAge": "7 days"
@@ -47,10 +37,7 @@
       "minimumReleaseAge": "14 days"
     },
     {
-      "description": [
-        "OpenTofu providers build the clusters themselves.",
-        "Picked up by the built-in `terraform` manager, which parses `required_providers` in every .tf file. These providers build and destroy the machines the clusters run on, and a bad bump is not something Argo can roll back, so they get the same caution as prod and are never automerged."
-      ],
+      "description": "OpenTofu versions are never automerged.",
       "matchFileNames": ["tofu/**"],
       "automerge": false,
       "minimumReleaseAge": "14 days",
@@ -67,11 +54,7 @@
       ]
     },
     {
-      "description": [
-        "Container images in raw manifests, tag + digest",
-        "Images we declare ourselves are pinned `repo:tag@sha256:...`, so the digest has to be captured or Renovate would bump the tag and leave a stale digest pointing at the old image.",
-        "A regex rather than the native `kubernetes` manager because one of these images lives inside a ConfigMap string (the local-path helper pod), which a structured parser cannot see."
-      ],
+      "description": "Container images in raw manifests, tag + digest",
       "customType": "regex",
       "managerFilePatterns": ["/^(apps|infrastructure)/.+\\.yaml$/"],
       "matchStrings": [
