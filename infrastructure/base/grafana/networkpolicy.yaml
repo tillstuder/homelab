@@ -4,7 +4,7 @@ metadata:
   name: grafana
   namespace: monitoring
 spec:
-  description: "Grafana: reached through the shared gateway, reads the two stores, and watches for dashboard ConfigMaps."
+  description: "Grafana: reached through the shared gateway, reads the two stores, watches for dashboard ConfigMaps, and fetches its preinstalled plugins."
   endpointSelector:
     matchLabels:
       app.kubernetes.io/name: grafana
@@ -37,4 +37,11 @@ spec:
       toPorts:
         - ports:
             - port: "3100"
+              protocol: TCP
+    - toFQDNs:
+        - matchName: "grafana.com"
+        - matchPattern: "*.grafana.com"
+      toPorts:
+        - ports:
+            - port: "443"
               protocol: TCP
