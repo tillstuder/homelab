@@ -6,6 +6,7 @@ resources:
   - ./dns.yaml
   - ./apiserver.yaml
   - ./coredns.yaml
+  - ./health.yaml
   # Each component keeps its policy next to its own values.yaml:
   - ../alloy
   - ../argo-cd
