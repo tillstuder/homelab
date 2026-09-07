@@ -55,4 +55,6 @@ Two things are granted centrally, because every pod needs them:
 
 External Secrets using 1Password, there is one vault and service account per cluster (`homelab-prod`, `homelab-dev`) so dev cannot read prod credentials.
 
-Talos machine secrets are per cluster, held in 1Password as the `talsecret-prod` and `talsecret-dev` documents.
+Talos machine secrets are per cluster, held in 1Password as the `talsecret-prod` and `talsecret-dev` documents in the shared `HomeLab` vault.
+`HomeLab` is outside both service account tokens, and each cluster's `ClusterSecretStore` is pinned to its own cluster vault, so no in-cluster identity can read a bundle.
+Only OpenTofu reads them, from the operator workstation, through the operator's own 1Password session.

@@ -34,7 +34,15 @@ op vault create homelab-prod
 op vault create homelab-dev
 ```
 
-Everything from here on uses `homelab-prod`. For the dev cluster, substitute `homelab-dev` and `talsecret-dev` throughout.
+On top of those you need one shared `HomeLab` vault, which holds the Talos machine secrets of both clusters:
+
+```sh
+op vault create HomeLab
+```
+
+`HomeLab` is deliberately left out of the per-cluster service account tokens created below, so nothing running in either cluster can read it.
+
+Everything from here on uses `homelab-prod`. For the dev cluster, substitute `homelab-dev` and `talsecret-dev` throughout. `HomeLab` is the same vault for both.
 
 #### Cloudflare
 
@@ -56,7 +64,7 @@ Next you need to create the Talos secrets bundle, its the cluster's root of trus
 
 ```sh
 talosctl gen secrets -o talsecret-prod.yaml
-op document create talsecret-prod.yaml --title talsecret-prod --vault homelab-prod
+op document create talsecret-prod.yaml --title talsecret-prod --vault HomeLab
 rm talsecret-prod.yaml
 ```
 
