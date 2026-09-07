@@ -16,6 +16,10 @@ cgroup:
 k8sServiceHost: localhost
 k8sServicePort: 7445
 
+encryption:
+  enabled: true
+  type: wireguard
+
 # LoadBalancer services:
 l2announcements:
   enabled: true

@@ -1,6 +1,27 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
+  name: root
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-100"
+spec:
+  description: The app-of-apps, and nothing else
+  sourceRepos:
+    - https://github.com/tillstuder/homelab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: argoproj.io
+      kind: Application
+    - group: argoproj.io
+      kind: AppProject
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
   name: platform
   namespace: argocd
   annotations:
@@ -48,3 +69,17 @@ spec:
   namespaceResourceWhitelist:
     - group: "*"
       kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-100"
+spec:
+  description: Deliberately unusable
+  sourceRepos: []
+  destinations: []
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist: []

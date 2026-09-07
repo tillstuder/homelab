@@ -1,8 +1,7 @@
 server:
   extraFlags:
-    - web.enable-lifecycle
     - storage.tsdb.wal-compression
-    - web.enable-remote-write-receiver
+    - web.enable-remote-write-receiver # alloy writes to /api/v1/write
   tsdb:
     out_of_order_time_window: 10m
   retention: 15d

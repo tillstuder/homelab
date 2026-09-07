@@ -226,6 +226,7 @@ kubectl create secret generic onepassword-token \
 ## 6. Hand over to Argo
 
 ```sh
+kubectl apply -f clusters/prod/projects.yaml
 kubectl apply -f clusters/prod/root.yaml
 kubectl -n argocd get applications -w
 ```
