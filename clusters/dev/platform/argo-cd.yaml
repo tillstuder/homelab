@@ -13,7 +13,7 @@ spec:
       ref: values
     - repoURL: https://argoproj.github.io/argo-helm
       chart: argo-cd
-      targetRevision: 10.8.2
+      targetRevision: 10.9.0
       helm:
         releaseName: argo-cd
         ignoreMissingValueFiles: true
