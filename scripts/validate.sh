@@ -219,6 +219,24 @@ else
   printf '        values: %s\n        policy: %s\n' "$want" "$got"; FAIL=1
 fi
 
+echo "== alert rules =="
+# A rule that never fires is indistinguishable from a quiet cluster, so the
+# thresholds, the `for` windows and the rendered annotations are pinned by
+# promtool unit tests rather than trusted. The rules live inside a Helm values
+# file, so they are extracted next to the cases before the tests run.
+if have promtool; then
+  RT="$WORK/ruletests"; mkdir -p "$RT"
+  yq -o=yaml '.serverFiles."alerting_rules.yml"' infrastructure/base/prometheus/values.yaml > "$RT/alerting_rules.yml"
+  cp infrastructure/base/prometheus/tests/*.yml "$RT/" 2>/dev/null
+  n=$(grep -c -- '- alert:' "$RT/alerting_rules.yml")
+  if out=$(cd "$RT" && promtool test rules tests-*.yml 2>&1); then
+    t=$(find "$RT" -name 'tests-*.yml' | wc -l | tr -d ' ')
+    printf '  ok    %s rules, %s test file(s) pass\n' "$n" "$t"
+  else
+    printf '  FAIL  promtool test rules\n%s\n' "$(echo "$out" | sed 's/^/        /' | head -25)"; FAIL=1
+  fi
+fi
+
 echo "== prometheus reload =="
 # Prometheus re-reads its ConfigMap only when something tells it to. The chart's
 # Deployment carries no checksum of that ConfigMap, so Argo changing a rule

@@ -1,0 +1,200 @@
+rule_files:
+  - alerting_rules.yml
+evaluation_interval: 1m
+
+tests:
+  # --- PodCrashLooping: quiet, then restarts pile up ---------------------
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="chaos",pod="crasher-abc",container="crasher"}'
+        values: '0 0 0 0 0 0 0 0 0 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PodCrashLooping
+        exp_alerts: []
+      - eval_time: 22m
+        alertname: PodCrashLooping
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: chaos
+              pod: crasher-abc
+              container: crasher
+            exp_annotations:
+              summary: "chaos/crasher-abc is restarting repeatedly"
+              description: "Container crasher in chaos/crasher-abc restarted more than 3 times in 15m."
+
+  # --- a stable pod never fires ------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="ntfy",pod="ntfy-1",container="ntfy"}'
+        values: '0+0x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: PodCrashLooping
+        exp_alerts: []
+
+  # --- PodNotReady --------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="chaos",pod="pending-abc",phase="Pending"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: PodNotReady
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: PodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: chaos
+              pod: pending-abc
+              phase: Pending
+            exp_annotations:
+              summary: "chaos/pending-abc is stuck in Pending"
+              description: "The pod has been Pending for 15m."
+
+  # --- DeploymentReplicasMismatch ----------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="chaos",deployment="short"}'
+        values: '2+0x25'
+      - series: 'kube_deployment_status_replicas_available{namespace="chaos",deployment="short"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: DeploymentReplicasMismatch
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: DeploymentReplicasMismatch
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: chaos
+              deployment: short
+            exp_annotations:
+              summary: "Deployment chaos/short is short of replicas"
+              description: "Desired and available replica counts have disagreed for 15m."
+
+  # --- a fully-available deployment never fires --------------------------
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="ntfy",deployment="ntfy"}'
+        values: '1+0x25'
+      - series: 'kube_deployment_status_replicas_available{namespace="ntfy",deployment="ntfy"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: DeploymentReplicasMismatch
+        exp_alerts: []
+
+  # --- CertExpiringSoon: inside the 14d window ---------------------------
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{namespace="envoy-gateway-system",name="wildcard-tls"}'
+        values: '1000000+0x70'
+    alert_rule_test:
+      - eval_time: 59m
+        alertname: CertExpiringSoon
+        exp_alerts: []
+      - eval_time: 61m
+        alertname: CertExpiringSoon
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: envoy-gateway-system
+              name: wildcard-tls
+            exp_annotations:
+              summary: "Certificate envoy-gateway-system/wildcard-tls expires within 14 days"
+              description: "cert-manager has not renewed it yet. DNS-01 through Cloudflare is the usual failure point."
+
+  # --- a cert far from expiry never fires --------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{namespace="envoy-gateway-system",name="wildcard-tls"}'
+        values: '9000000+0x70'
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: CertExpiringSoon
+        exp_alerts: []
+
+  # --- CertNotReady -------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_ready_status{namespace="envoy-gateway-system",name="wildcard-tls",condition="True"}'
+        values: '0+0x70'
+    alert_rule_test:
+      - eval_time: 59m
+        alertname: CertNotReady
+        exp_alerts: []
+      - eval_time: 61m
+        alertname: CertNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: envoy-gateway-system
+              name: wildcard-tls
+              condition: "True"
+            exp_annotations:
+              summary: "Certificate envoy-gateway-system/wildcard-tls is not Ready"
+              description: "The certificate has been in a not-Ready state for an hour."
+
+  # --- AlloyMetricsStale: the kubelet series simply stops existing --------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="apiserver",instance="kubernetes.default.svc:443"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: AlloyMetricsStale
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: AlloyMetricsStale
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: kubelet
+            exp_annotations:
+              summary: "No metrics have arrived for 10m"
+              description: "Alloy has stopped remote-writing. Alerting is blind until this recovers."
+
+  # --- AlertmanagerNotificationFailures ----------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'alertmanager_notifications_failed_total{integration="slack",receiver="slack"}'
+        values: '0+1x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: AlertmanagerNotificationFailures
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: AlertmanagerNotificationFailures
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              integration: slack
+              receiver: slack
+            exp_annotations:
+              summary: "Alertmanager cannot deliver notifications"
+              description: "Deliveries to slack have been failing for 15m. This alert can only arrive once the path recovers."
+
+  # --- APIServerDown ------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="apiserver",instance="kubernetes.default.svc:443"}'
+        values: '1 1 0 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: APIServerDown
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: APIServerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: apiserver
+              instance: kubernetes.default.svc:443
+            exp_annotations:
+              summary: "The apiserver is unreachable"
+              description: "Alloy has been unable to scrape the apiserver for 5m."

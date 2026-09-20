@@ -1,0 +1,138 @@
+rule_files:
+  - alerting_rules.yml
+evaluation_interval: 1m
+
+tests:
+  # --- ArgoAppOutOfSync: fires only after 15m of drift -------------------
+  - interval: 1m
+    input_series:
+      - series: 'argocd_app_info{name="ntfy",project="apps",sync_status="OutOfSync",health_status="Healthy"}'
+        values: '1+0x20'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: ArgoAppOutOfSync
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: ArgoAppOutOfSync
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: ntfy
+              project: apps
+              sync_status: OutOfSync
+              health_status: Healthy
+            exp_annotations:
+              summary: "Argo CD application ntfy is OutOfSync"
+              description: "ntfy in project apps has been OutOfSync for 15m. Git and the cluster disagree and self-heal has not closed the gap."
+
+  # --- a Synced app never fires ------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'argocd_app_info{name="ntfy",project="apps",sync_status="Synced",health_status="Healthy"}'
+        values: '1+0x30'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: ArgoAppOutOfSync
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: ArgoAppDegraded
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: ArgoAppMissing
+        exp_alerts: []
+
+  # --- ArgoAppDegraded: 10m ----------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'argocd_app_info{name="loki",project="platform",sync_status="Synced",health_status="Degraded"}'
+        values: '1+0x20'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: ArgoAppDegraded
+        exp_alerts: []
+      - eval_time: 11m
+        alertname: ArgoAppDegraded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              name: loki
+              project: platform
+              sync_status: Synced
+              health_status: Degraded
+            exp_annotations:
+              summary: "Argo CD application loki is Degraded"
+              description: "loki has been Degraded for 10m. The manifests applied but the workload is unhealthy."
+
+  # --- ArgoAppMissing: 15m ------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'argocd_app_info{name="grafana",project="platform",sync_status="Synced",health_status="Missing"}'
+        values: '1+0x20'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: ArgoAppMissing
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: ArgoAppMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: grafana
+              project: platform
+              sync_status: Synced
+              health_status: Missing
+            exp_annotations:
+              summary: "Argo CD application grafana is Missing"
+              description: "grafana has resources that do not exist in the cluster."
+
+  # --- ArgoSyncFailed: fires as soon as a failed sync lands ---------------
+  - interval: 1m
+    input_series:
+      - series: 'argocd_app_sync_total{name="ntfy",project="apps",phase="Failed"}'
+        values: '0 0 0 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ArgoSyncFailed
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ArgoSyncFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: ntfy
+              project: apps
+              phase: Failed
+            exp_annotations:
+              summary: "Argo CD sync failed for ntfy"
+              description: "A sync of ntfy finished in phase Failed within the last 10m."
+
+  # --- ArgoAppSyncUnknown: Argo cannot even render the manifests ----------
+  - interval: 1m
+    input_series:
+      - series: 'argocd_app_info{name="chaos-syncfail",project="apps",sync_status="Unknown",health_status="Healthy"}'
+        values: '1+0x20'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: ArgoAppSyncUnknown
+        exp_alerts: []
+      - eval_time: 11m
+        alertname: ArgoAppSyncUnknown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              name: chaos-syncfail
+              project: apps
+              sync_status: Unknown
+              health_status: Healthy
+            exp_annotations:
+              summary: "Argo CD cannot evaluate application chaos-syncfail"
+              description: >-
+                chaos-syncfail in project apps has been in sync state Unknown for 10m.
+                Argo cannot build its manifests, so it is neither syncing nor reporting drift.
+      # and the rules that were supposed to cover this app stay silent
+      - eval_time: 20m
+        alertname: ArgoAppOutOfSync
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: ArgoSyncFailed
+        exp_alerts: []

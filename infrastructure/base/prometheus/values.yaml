@@ -104,6 +104,17 @@ serverFiles:
             annotations:
               summary: "Argo CD application {{ $labels.name }} is Missing"
               description: "{{ $labels.name }} has resources that do not exist in the cluster."
+          - alert: ArgoAppSyncUnknown
+            expr: argocd_app_info{sync_status="Unknown"} == 1
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Argo CD cannot evaluate application {{ $labels.name }}"
+              description: >-
+                {{ $labels.name }} in project {{ $labels.project }} has been in sync state
+                Unknown for 10m. Argo cannot build its manifests, so it is neither syncing
+                nor reporting drift.
           - alert: ArgoSyncFailed
             expr: increase(argocd_app_sync_total{phase="Failed"}[10m]) > 0
             for: 0m

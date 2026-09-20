@@ -44,5 +44,13 @@ jobs:
           sudo install -m 0755 alloy-linux-amd64 /usr/local/bin/alloy
           rm alloy.zip alloy-linux-amd64
 
+      - name: Install promtool
+        run: |
+          curl -sSL -o prometheus.tar.gz \
+            https://github.com/prometheus/prometheus/releases/download/v3.7.3/prometheus-3.7.3.linux-amd64.tar.gz
+          tar -xzf prometheus.tar.gz
+          sudo install -m 0755 prometheus-3.7.3.linux-amd64/promtool /usr/local/bin/promtool
+          rm -rf prometheus.tar.gz prometheus-3.7.3.linux-amd64
+
       - name: Render manifests and charts, then validate the OpenTofu roots
         run: ./scripts/validate.sh

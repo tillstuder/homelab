@@ -1,0 +1,113 @@
+rule_files:
+  - alerting_rules.yml
+evaluation_interval: 1m
+
+tests:
+  # --- 10% free: warning only, critical must stay silent -----------------
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_avail_bytes{fstype="ext4",mountpoint="/var",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '10+0x25'
+      - series: 'node_filesystem_size_bytes{fstype="ext4",mountpoint="/var",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '100+0x25'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: NodeDiskFillingUp
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: NodeDiskFillingUp
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              fstype: ext4
+              mountpoint: /var
+              node: dev-cp-1
+              instance: 10.42.5.210:9100
+            exp_annotations:
+              summary: "/var on dev-cp-1 is above 85% full"
+              description: "Less than 15% of /var is free on dev-cp-1."
+      - eval_time: 20m
+        alertname: NodeDiskCritical
+        exp_alerts: []
+
+  # --- 2% free: both fire, critical on the shorter fuse ------------------
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_avail_bytes{fstype="ext4",mountpoint="/var",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '2+0x25'
+      - series: 'node_filesystem_size_bytes{fstype="ext4",mountpoint="/var",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '100+0x25'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: NodeDiskCritical
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: NodeDiskCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              fstype: ext4
+              mountpoint: /var
+              node: dev-cp-1
+              instance: 10.42.5.210:9100
+            exp_annotations:
+              summary: "/var on dev-cp-1 is above 95% full"
+              description: "Less than 5% of /var is free on dev-cp-1. local-path volumes live here."
+
+  # --- tmpfs is excluded even when full ----------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_avail_bytes{fstype="tmpfs",mountpoint="/run",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '1+0x25'
+      - series: 'node_filesystem_size_bytes{fstype="tmpfs",mountpoint="/run",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '100+0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: NodeDiskFillingUp
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: NodeDiskCritical
+        exp_alerts: []
+
+  # --- NodeDown ----------------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'up{job="node-exporter",node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '1 1 1 0 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: NodeDown
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: NodeDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              job: node-exporter
+              node: dev-cp-1
+              instance: 10.42.5.210:9100
+            exp_annotations:
+              summary: "Node dev-cp-1 is not reporting"
+              description: "node-exporter on dev-cp-1 has been unscrapeable for 5m."
+
+  # --- NodeMemoryPressure -------------------------------------------------
+  - interval: 1m
+    input_series:
+      - series: 'node_memory_MemAvailable_bytes{node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '5+0x25'
+      - series: 'node_memory_MemTotal_bytes{node="dev-cp-1",instance="10.42.5.210:9100"}'
+        values: '100+0x25'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: NodeMemoryPressure
+        exp_alerts: []
+      - eval_time: 16m
+        alertname: NodeMemoryPressure
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              node: dev-cp-1
+              instance: 10.42.5.210:9100
+            exp_annotations:
+              summary: "Node dev-cp-1 is low on memory"
+              description: "Less than 10% of memory has been available on dev-cp-1 for 15m."
