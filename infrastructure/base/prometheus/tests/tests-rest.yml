@@ -3,31 +3,55 @@ rule_files:
 evaluation_interval: 1m
 
 tests:
-  # --- PodCrashLooping: quiet, then restarts pile up ---------------------
+  # --- PodCrashLooping: the waiting reason stays set for as long as it crashes -
   - interval: 1m
     input_series:
-      - series: 'kube_pod_container_status_restarts_total{namespace="chaos",pod="crasher-abc",container="crasher"}'
-        values: '0 0 0 0 0 0 0 0 0 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15'
+      - series: 'kube_pod_container_status_waiting_reason{namespace="chaos",pod="crasher",container="crasher",reason="CrashLoopBackOff"}'
+        values: '1+0x25'
     alert_rule_test:
-      - eval_time: 5m
+      - eval_time: 9m
         alertname: PodCrashLooping
         exp_alerts: []
-      - eval_time: 22m
+      - eval_time: 11m
         alertname: PodCrashLooping
         exp_alerts:
           - exp_labels:
               severity: warning
               namespace: chaos
-              pod: crasher-abc
+              pod: crasher
               container: crasher
+              reason: CrashLoopBackOff
             exp_annotations:
-              summary: "chaos/crasher-abc is restarting repeatedly"
-              description: "Container crasher in chaos/crasher-abc restarted more than 3 times in 15m."
+              summary: "chaos/crasher is restarting repeatedly"
+              description: "Container crasher in chaos/crasher is in CrashLoopBackOff."
+
+  # --- a long-running crashloop still alerts, which the restart rate did not ---
+  # On dev a pod on its 17th restart scored increase()[15m] = 2.14, under any
+  # sane threshold, while the pod was still crashing.
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="chaos",pod="crasher",container="crasher",reason="CrashLoopBackOff"}'
+        values: '1+0x120'
+      - series: 'kube_pod_container_status_restarts_total{namespace="chaos",pod="crasher",container="crasher"}'
+        values: '0+1x24'   # one restart every 5m: too slow for a rate threshold
+    alert_rule_test:
+      - eval_time: 110m
+        alertname: PodCrashLooping
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: chaos
+              pod: crasher
+              container: crasher
+              reason: CrashLoopBackOff
+            exp_annotations:
+              summary: "chaos/crasher is restarting repeatedly"
+              description: "Container crasher in chaos/crasher is in CrashLoopBackOff."
 
   # --- a stable pod never fires ------------------------------------------
   - interval: 1m
     input_series:
-      - series: 'kube_pod_container_status_restarts_total{namespace="ntfy",pod="ntfy-1",container="ntfy"}'
+      - series: 'kube_pod_container_status_waiting_reason{namespace="ntfy",pod="ntfy-1",container="ntfy",reason="CrashLoopBackOff"}'
         values: '0+0x30'
     alert_rule_test:
       - eval_time: 25m
@@ -108,6 +132,18 @@ tests:
             exp_annotations:
               summary: "Certificate envoy-gateway-system/wildcard-tls expires within 14 days"
               description: "cert-manager has not renewed it yet. DNS-01 through Cloudflare is the usual failure point."
+
+  # --- a Certificate that never issued reports 0 and must not fire -------
+  # Seen on dev: chaos-neverready had expiration 0, which is inside every
+  # window. CertNotReady is the alert that belongs to that state.
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{namespace="chaos",name="chaos-neverready"}'
+        values: '0+0x70'
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: CertExpiringSoon
+        exp_alerts: []
 
   # --- a cert far from expiry never fires --------------------------------
   - interval: 1m

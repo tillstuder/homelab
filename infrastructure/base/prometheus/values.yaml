@@ -79,7 +79,7 @@ serverFiles:
       - name: argocd
         rules:
           - alert: ArgoAppOutOfSync
-            expr: argocd_app_info{sync_status="OutOfSync"} == 1
+            expr: max by (name, project) (argocd_app_info{sync_status="OutOfSync"}) == 1
             for: 15m
             labels:
               severity: warning
@@ -89,7 +89,7 @@ serverFiles:
                 {{ $labels.name }} in project {{ $labels.project }} has been OutOfSync
                 for 15m. Git and the cluster disagree and self-heal has not closed the gap.
           - alert: ArgoAppDegraded
-            expr: argocd_app_info{health_status="Degraded"} == 1
+            expr: max by (name, project) (argocd_app_info{health_status="Degraded"}) == 1
             for: 10m
             labels:
               severity: critical
@@ -97,7 +97,7 @@ serverFiles:
               summary: "Argo CD application {{ $labels.name }} is Degraded"
               description: "{{ $labels.name }} has been Degraded for 10m. The manifests applied but the workload is unhealthy."
           - alert: ArgoAppMissing
-            expr: argocd_app_info{health_status="Missing"} == 1
+            expr: max by (name, project) (argocd_app_info{health_status="Missing"}) == 1
             for: 15m
             labels:
               severity: warning
@@ -105,7 +105,7 @@ serverFiles:
               summary: "Argo CD application {{ $labels.name }} is Missing"
               description: "{{ $labels.name }} has resources that do not exist in the cluster."
           - alert: ArgoAppSyncUnknown
-            expr: argocd_app_info{sync_status="Unknown"} == 1
+            expr: max by (name, project) (argocd_app_info{sync_status="Unknown"}) == 1
             for: 10m
             labels:
               severity: critical
@@ -162,13 +162,13 @@ serverFiles:
       - name: workloads
         rules:
           - alert: PodCrashLooping
-            expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
-            for: 5m
+            expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} == 1
+            for: 10m
             labels:
               severity: warning
             annotations:
               summary: "{{ $labels.namespace }}/{{ $labels.pod }} is restarting repeatedly"
-              description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} restarted more than 3 times in 15m."
+              description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} is in CrashLoopBackOff."
           - alert: PodNotReady
             expr: kube_pod_status_phase{phase=~"Pending|Unknown"} == 1
             for: 15m
@@ -189,7 +189,9 @@ serverFiles:
       - name: certificates
         rules:
           - alert: CertExpiringSoon
-            expr: certmanager_certificate_expiration_timestamp_seconds - time() < 14 * 24 * 3600
+            expr: >-
+              certmanager_certificate_expiration_timestamp_seconds > 0
+              and certmanager_certificate_expiration_timestamp_seconds - time() < 14 * 24 * 3600
             for: 1h
             labels:
               severity: warning

@@ -19,8 +19,6 @@ tests:
               severity: warning
               name: ntfy
               project: apps
-              sync_status: OutOfSync
-              health_status: Healthy
             exp_annotations:
               summary: "Argo CD application ntfy is OutOfSync"
               description: "ntfy in project apps has been OutOfSync for 15m. Git and the cluster disagree and self-heal has not closed the gap."
@@ -57,8 +55,6 @@ tests:
               severity: critical
               name: loki
               project: platform
-              sync_status: Synced
-              health_status: Degraded
             exp_annotations:
               summary: "Argo CD application loki is Degraded"
               description: "loki has been Degraded for 10m. The manifests applied but the workload is unhealthy."
@@ -79,8 +75,6 @@ tests:
               severity: warning
               name: grafana
               project: platform
-              sync_status: Synced
-              health_status: Missing
             exp_annotations:
               summary: "Argo CD application grafana is Missing"
               description: "grafana has resources that do not exist in the cluster."
@@ -122,8 +116,6 @@ tests:
               severity: critical
               name: chaos-syncfail
               project: apps
-              sync_status: Unknown
-              health_status: Healthy
             exp_annotations:
               summary: "Argo CD cannot evaluate application chaos-syncfail"
               description: >-
