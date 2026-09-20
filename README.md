@@ -43,6 +43,7 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
 - **OS Isolation**: Kata Containers or similar.
 - **Virtual Machines**: KubeVirt
 - **EDR**: Wazuh, Fibratus
+- **Honeypots**: ???
 - **Allow spreading of Talos nodes across physical hosts**: e.g.:
   ```hcl
   nodes = {
