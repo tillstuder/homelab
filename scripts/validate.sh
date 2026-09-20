@@ -219,6 +219,47 @@ else
   printf '        values: %s\n        policy: %s\n' "$want" "$got"; FAIL=1
 fi
 
+echo "== prometheus reload =="
+# Prometheus re-reads its ConfigMap only when something tells it to. The chart's
+# Deployment carries no checksum of that ConfigMap, so Argo changing a rule
+# leaves the running pod on its old config indefinitely while every Application
+# still reports Synced and Healthy. The reloader sidecar and the /-/reload
+# endpoint it POSTs to are therefore both load-bearing, and both are values a
+# future edit could drop without anything going red.
+for c in dev prod; do
+  app="clusters/$c/platform/prometheus.yaml"
+  [ -f "$app" ] || continue
+  ver=$(yq -r '.spec.sources[] | select(.chart == "prometheus") | .targetRevision' "$app")
+  args=()
+  while read -r vf; do
+    [ -z "$vf" ] && continue
+    f="${vf/\$values\//$ROOT/}"
+    [ -f "$f" ] && args+=(-f "$f")   # mirrors ignoreMissingValueFiles
+  done < <(yq -r '.spec.sources[] | select(.chart == "prometheus") | .helm.valueFiles[]?' "$app")
+
+  out=$(helm template prometheus prometheus \
+          --repo https://prometheus-community.github.io/helm-charts \
+          --version "$ver" -n monitoring ${args[@]+"${args[@]}"} 2>/dev/null)
+  rules=$(echo "$out" \
+          | yq -r 'select(.kind=="ConfigMap" and .metadata.name=="prometheus-server") | .data."alerting_rules.yml" // ""' 2>/dev/null \
+          | grep -c -- '- alert:')
+  if [ "${rules:-0}" -eq 0 ]; then
+    printf '  ok    %-5s no alerting rules, nothing to reload\n' "$c"
+    continue
+  fi
+
+  bad=0
+  if ! echo "$out" | yq -r 'select(.kind=="Deployment" and .metadata.name=="prometheus-server") | .spec.template.spec.containers[].name' \
+       | grep -q 'configmap-reload'; then
+    printf '  FAIL  %-5s %s alerting rules but no configmap-reload sidecar — a rule change would never reach the pod\n' "$c" "$rules"; bad=1
+  fi
+  if ! echo "$out" | yq -r 'select(.kind=="Deployment" and .metadata.name=="prometheus-server") | .spec.template.spec.containers[] | select(.name=="prometheus-server") | .args[]' \
+       | grep -q -- '--web.enable-lifecycle'; then
+    printf '  FAIL  %-5s web.enable-lifecycle is not set, so /-/reload is disabled and the reloader cannot do anything\n' "$c"; bad=1
+  fi
+  [ "$bad" -eq 0 ] && printf '  ok    %-5s %s rules, reloader present and /-/reload enabled\n' "$c" "$rules" || FAIL=1
+done
+
 echo "== alerting =="
 # The Slack ping is content-free on purpose, so its deep link is the only route
 # from the notification to the alert. Nothing reports a broken one: Alertmanager

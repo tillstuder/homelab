@@ -2,6 +2,7 @@ server:
   extraFlags:
     - storage.tsdb.wal-compression
     - web.enable-remote-write-receiver # alloy writes to /api/v1/write
+    - web.enable-lifecycle
   tsdb:
     out_of_order_time_window: 10m
   retention: 15d
@@ -41,9 +42,24 @@ scrapeConfigs:
   prometheus-pushgateway:
     enabled: false
 
+# The chart's Deployment carries no checksum of the ConfigMap, so Argo updating a
+# rule leaves the running pod on its old config forever, with every Application
+# still reporting Synced. The reloader watches /etc/config and POSTs /-/reload,
+# which is what makes a rule change in git actually take effect.
 configmapReload:
   prometheus:
-    enabled: false
+    enabled: true
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      readOnlyRootFilesystem: true
+    resources:
+      requests:
+        cpu: 10m
+        memory: 24Mi
+      limits:
+        memory: 64Mi
 
 alertmanager:
   enabled: false
