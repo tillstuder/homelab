@@ -174,14 +174,6 @@ serverFiles:
             annotations:
               summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} is short of replicas"
               description: "Desired and available replica counts have disagreed for 15m."
-          - alert: PVCAlmostFull
-            expr: kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.15
-            for: 15m
-            labels:
-              severity: warning
-            annotations:
-              summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is above 85% full"
-              description: "Less than 15% of the claim is free. local-path volumes do not grow on their own."
 
       - name: certificates
         rules:
