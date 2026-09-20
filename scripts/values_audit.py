@@ -6,7 +6,7 @@ and still render perfectly. Nothing at runtime reports this either: the setting
 simply never takes effect. This is the one class of error neither `helm
 template` nor the cluster will tell you about.
 
-Usage: values_audit.py <declared.json> <ours.json> [<ours.json> ...]
+Usage: values_audit.py [--chart <name>] <declared.json> <ours.json> [...]
 All inputs are JSON (converted from YAML by yq in validate.sh).
 """
 
@@ -15,12 +15,15 @@ import sys
 
 # Some chart values are documented as accepting arbitrary user-supplied keys
 # while *also* declaring defaults of their own. Helm's schema cannot express
-# that, so they are listed here by hand.
+# that, so they are listed here by hand, keyed by chart: `config` means the
+# whole alertmanager.yml in one chart and a specific struct in another.
 FREEFORM = {
-    ("configs", "params"),        # argo-cd: arbitrary argocd-cmd-params-cm entries
-    ("configs", "cm"),            # argo-cd: arbitrary argocd-cm entries
-    ("grafana.ini",),             # grafana: the whole grafana.ini, section by section
-    ("loki", "limits_config"),    # loki: any limit Loki itself accepts, not just the seeded ones
+    ("argo-cd", "configs", "params"),      # arbitrary argocd-cmd-params-cm entries
+    ("argo-cd", "configs", "cm"),          # arbitrary argocd-cm entries
+    ("grafana", "grafana.ini"),            # the whole grafana.ini, section by section
+    ("loki", "loki", "limits_config"),     # any limit Loki itself accepts, not just the seeded ones
+    ("alertmanager", "config"),            # the whole alertmanager.yml, defined by Alertmanager
+    ("prometheus", "server", "global"),    # the prometheus.yml global block, defined by Prometheus
 }
 
 
@@ -45,10 +48,14 @@ def lookup(declared, path):
 
 
 def main():
-    with open(sys.argv[1]) as fh:
+    argv = sys.argv[1:]
+    chart = None
+    if argv[:1] == ["--chart"]:
+        chart, argv = argv[1], argv[2:]
+    with open(argv[0]) as fh:
         declared = json.load(fh)
     unknown = []
-    for f in sys.argv[2:]:
+    for f in argv[1:]:
         with open(f) as fh:
             ours = json.load(fh)
         for path in leaf_paths(ours):
@@ -60,7 +67,7 @@ def main():
             # Anything under such a parent is legitimate.
             if deepest is None or (isinstance(deepest, dict) and not deepest):
                 continue
-            if any(path[:i] in FREEFORM for i in range(1, len(path))):
+            if any((chart,) + path[:i] in FREEFORM for i in range(1, len(path) + 1)):
                 continue
             unknown.append(".".join(path))
     for k in unknown:

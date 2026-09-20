@@ -8,6 +8,7 @@
     - [1Password Service Account Token](#1password-service-account-token)
     - [Grafana](#grafana)
     - [Argo CD](#argo-cd)
+    - [Slack](#slack)
 - [1. Create the Proxmox identity for OpenTofu](#1-create-the-proxmox-identity-for-opentofu)
 - [2. Build the cluster](#2-build-the-cluster)
   - [Kubelet serving certificates](#kubelet-serving-certificates)
@@ -112,6 +113,25 @@ op item create --category=Login --title=argocd --vault=homelab-prod \
 op item edit argocd --vault=homelab-prod "password-bcrypt[password]=$(
   htpasswd -nbBC 10 '' "$(op read 'op://homelab-prod/argocd/password')" | tr -d ':\n' | sed 's/^\$2y/$2a/'
 )"
+```
+
+#### Slack
+
+Alerting sends a Slack notification when something fires, so you need a workspace with a channel per cluster (`#homelab-prod` and `#homelab-dev`).
+
+Create **one** Slack app and give it a webhook per cluster, at https://api.slack.com/apps:
+
+1. **Create New App** -> **From scratch**, name it `homelab`, pick your workspace.
+2. **Incoming Webhooks** -> toggle **Activate Incoming Webhooks** on.
+3. **Add New Webhook to Workspace** -> choose `#homelab-prod`. Repeat for `#homelab-dev`.
+
+Store the cluster's own URL in the cluster's own vault, as an **API Credential** item titled `slack` with field `webhook-url`:
+
+```sh
+printf 'Slack webhook URL: '; read -rs SLACK_URL; echo
+op item create --category="API Credential" --title=slack \
+  --vault=homelab-prod "webhook-url=$SLACK_URL"
+unset SLACK_URL
 ```
 
 ## 1. Create the Proxmox identity for OpenTofu

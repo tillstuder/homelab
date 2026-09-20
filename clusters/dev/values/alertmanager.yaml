@@ -1,0 +1,3 @@
+templates:
+  homelab-cluster.tmpl: |-
+    {{ define "homelab.grafana" }}grafana.dev.lab.cyseclab.net{{ end }}

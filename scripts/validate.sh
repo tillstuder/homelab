@@ -83,7 +83,7 @@ sort -u "$WORK/charts.tsv" 2>/dev/null | while IFS=$'\t' read -r cluster name re
     yq -o=json "$f" > "$j" 2>/dev/null && ours+=("$j")
   done
   [ ${#ours[@]} -eq 0 ] && continue
-  if out=$(./scripts/values_audit.py "$WORK/$name.declared.json" "${ours[@]}"); then
+  if out=$(./scripts/values_audit.py --chart "$name" "$WORK/$name.declared.json" "${ours[@]}"); then
     printf '  ok    %-5s %-22s all keys declared by the chart\n' "$cluster" "$name"
   else
     printf '  KEYS  %-5s %-22s not declared by %s@%s:\n%s\n' "$cluster" "$name" "$name" "$ver" "$out"
@@ -218,6 +218,40 @@ else
   printf '  FAIL  cert-manager DNS-01 resolvers disagree with its egress policy\n'
   printf '        values: %s\n        policy: %s\n' "$want" "$got"; FAIL=1
 fi
+
+echo "== alerting =="
+# The Slack ping is content-free on purpose, so its deep link is the only route
+# from the notification to the alert. Nothing reports a broken one: Alertmanager
+# renders an undefined template as the empty string, so a cluster missing its
+# values file sends a "https://" link that still delivers, still returns 200 and
+# still looks like a working alert. The host is therefore asserted here, against
+# the hostname Grafana is actually routed on.
+for c in dev prod; do
+  app="clusters/$c/platform/alertmanager.yaml"
+  [ -f "$app" ] || continue
+  ver=$(yq -r '.spec.sources[] | select(.chart == "alertmanager") | .targetRevision' "$app")
+  args=()
+  while read -r vf; do
+    [ -z "$vf" ] && continue
+    f="${vf/\$values\//$ROOT/}"
+    [ -f "$f" ] && args+=(-f "$f")   # mirrors ignoreMissingValueFiles
+  done < <(yq -r '.spec.sources[] | select(.chart == "alertmanager") | .helm.valueFiles[]?' "$app")
+
+  got=$(helm template alertmanager alertmanager \
+          --repo https://prometheus-community.github.io/helm-charts \
+          --version "$ver" -n monitoring ${args[@]+"${args[@]}"} 2>/dev/null \
+        | yq -r 'select(.kind=="ConfigMap") | .data[]' 2>/dev/null \
+        | sed -n 's/.*define "homelab.grafana" }}\(.*\){{ end }}.*/\1/p' | head -1)
+  want=$(yq -r '.route.main.hostnames[0] // ""' "clusters/$c/values/grafana.yaml" 2>/dev/null)
+
+  if [ -z "$got" ]; then
+    printf '  FAIL  %-5s defines no homelab.grafana — the deep link would render as "https://"\n' "$c"; FAIL=1
+  elif [ "$got" != "$want" ]; then
+    printf '  FAIL  %-5s deep link points at %s, Grafana is routed on %s\n' "$c" "$got" "$want"; FAIL=1
+  else
+    printf '  ok    %-5s deep link matches the Grafana route (%s)\n' "$c" "$got"
+  fi
+done
 
 echo "== approver allowlist =="
 # kubelet-csr-approver decides which node names and IPs may hold a serving certificate,

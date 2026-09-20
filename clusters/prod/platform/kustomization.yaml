@@ -2,6 +2,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  - ./alertmanager-secret.yaml
+  - ./alertmanager.yaml
   - ./alloy-config.yaml
   - ./alloy.yaml
   - ./argo-cd-config.yaml

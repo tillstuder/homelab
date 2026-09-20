@@ -16,6 +16,10 @@ server:
       memory: 512Mi
     limits:
       memory: 1536Mi
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager.monitoring.svc.cluster.local:9093
 
 scrapeConfigs:
   kubernetes-api-servers:
@@ -49,3 +53,165 @@ prometheus-node-exporter:
   enabled: false
 prometheus-pushgateway:
   enabled: false
+
+# Every rule carries a real summary and description even though the Slack ping
+# renders neither: they are what Grafana shows once the deep link is followed,
+# and they are what a move to full-content notifications would print.
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: argocd
+        rules:
+          - alert: ArgoAppOutOfSync
+            expr: argocd_app_info{sync_status="OutOfSync"} == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Argo CD application {{ $labels.name }} is OutOfSync"
+              description: >-
+                {{ $labels.name }} in project {{ $labels.project }} has been OutOfSync
+                for 15m. Git and the cluster disagree and self-heal has not closed the gap.
+          - alert: ArgoAppDegraded
+            expr: argocd_app_info{health_status="Degraded"} == 1
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Argo CD application {{ $labels.name }} is Degraded"
+              description: "{{ $labels.name }} has been Degraded for 10m. The manifests applied but the workload is unhealthy."
+          - alert: ArgoAppMissing
+            expr: argocd_app_info{health_status="Missing"} == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Argo CD application {{ $labels.name }} is Missing"
+              description: "{{ $labels.name }} has resources that do not exist in the cluster."
+          - alert: ArgoSyncFailed
+            expr: increase(argocd_app_sync_total{phase="Failed"}[10m]) > 0
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Argo CD sync failed for {{ $labels.name }}"
+              description: "A sync of {{ $labels.name }} finished in phase Failed within the last 10m."
+
+      - name: nodes
+        rules:
+          - alert: NodeDown
+            expr: up{job="node-exporter"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Node {{ $labels.node }} is not reporting"
+              description: "node-exporter on {{ $labels.node }} has been unscrapeable for 5m."
+          - alert: NodeDiskFillingUp
+            expr: node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"} < 0.15
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{ $labels.mountpoint }} on {{ $labels.node }} is above 85% full"
+              description: "Less than 15% of {{ $labels.mountpoint }} is free on {{ $labels.node }}."
+          - alert: NodeDiskCritical
+            expr: node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs"} < 0.05
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "{{ $labels.mountpoint }} on {{ $labels.node }} is above 95% full"
+              description: "Less than 5% of {{ $labels.mountpoint }} is free on {{ $labels.node }}. local-path volumes live here."
+          - alert: NodeMemoryPressure
+            expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Node {{ $labels.node }} is low on memory"
+              description: "Less than 10% of memory has been available on {{ $labels.node }} for 15m."
+
+      - name: workloads
+        rules:
+          - alert: PodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{ $labels.namespace }}/{{ $labels.pod }} is restarting repeatedly"
+              description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} restarted more than 3 times in 15m."
+          - alert: PodNotReady
+            expr: kube_pod_status_phase{phase=~"Pending|Unknown"} == 1
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{ $labels.namespace }}/{{ $labels.pod }} is stuck in {{ $labels.phase }}"
+              description: "The pod has been {{ $labels.phase }} for 15m."
+          - alert: DeploymentReplicasMismatch
+            expr: kube_deployment_spec_replicas != kube_deployment_status_replicas_available
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} is short of replicas"
+              description: "Desired and available replica counts have disagreed for 15m."
+          - alert: PVCAlmostFull
+            expr: kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.15
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "PVC {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is above 85% full"
+              description: "Less than 15% of the claim is free. local-path volumes do not grow on their own."
+
+      - name: certificates
+        rules:
+          - alert: CertExpiringSoon
+            expr: certmanager_certificate_expiration_timestamp_seconds - time() < 14 * 24 * 3600
+            for: 1h
+            labels:
+              severity: warning
+            annotations:
+              summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} expires within 14 days"
+              description: "cert-manager has not renewed it yet. DNS-01 through Cloudflare is the usual failure point."
+          - alert: CertNotReady
+            expr: certmanager_certificate_ready_status{condition="True"} == 0
+            for: 1h
+            labels:
+              severity: critical
+            annotations:
+              summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} is not Ready"
+              description: "The certificate has been in a not-Ready state for an hour."
+
+      - name: self
+        rules:
+          # Metrics arrive by Alloy remote-write, not by Prometheus scraping. If
+          # Alloy stops, every other rule in this file goes quiet instead of
+          # firing, so the absence of data is itself the alert.
+          - alert: AlloyMetricsStale
+            expr: absent_over_time(up{job="kubelet"}[10m])
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "No metrics have arrived for 10m"
+              description: "Alloy has stopped remote-writing. Alerting is blind until this recovers."
+          - alert: AlertmanagerNotificationFailures
+            expr: rate(alertmanager_notifications_failed_total[5m]) > 0
+            for: 15m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Alertmanager cannot deliver notifications"
+              description: "Deliveries to {{ $labels.integration }} have been failing for 15m. This alert can only arrive once the path recovers."
+          - alert: APIServerDown
+            expr: up{job="apiserver"} == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "The apiserver is unreachable"
+              description: "Alloy has been unable to scrape the apiserver for 5m."

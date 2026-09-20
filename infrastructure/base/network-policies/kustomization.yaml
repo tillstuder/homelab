@@ -8,6 +8,7 @@ resources:
   - ./coredns.yaml
   - ./health.yaml
   # Each component keeps its policy next to its own values.yaml:
+  - ../alertmanager
   - ../alloy
   - ../argo-cd
   - ../cert-manager
