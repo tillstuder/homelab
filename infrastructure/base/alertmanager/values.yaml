@@ -76,7 +76,7 @@ templates:
 
     {{ define "homelab.link" }}
       {{- "https://" }}{{ template "homelab.grafana" . }}
-      {{- "/alerting/groups?alertmanager=alertmanager" }}
+      {{- "/alerting/groups?alertmanager=Alertmanager" }}
     {{- end }}
 
     {{ define "homelab.fallback" }}
