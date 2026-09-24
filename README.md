@@ -38,7 +38,7 @@ The hierarchy is: _Cluster_ > _Namespace_ > _Application_ > _Component_
 - **App Authentication Layer**: Using Envoy Gateway with a OIDC Provider.
 - **Admission Control**: ValidatingAdmissionPolicy, Kyverno, OPA Gatekeeper etc.
 - **SAST and DAST Scanning**: Trivy, SonarQube, OWASP ZAP, etc.
-- **Security Review & Hardening** Kubescape, etc.
+- **Security Review & Hardening** Kubescape, `hostUsers: false`, etc.
 - **Runtime Security**: Tetragon, Falco, etc.
 - **OS Isolation**: Kata Containers or similar.
 - **Virtual Machines**: KubeVirt
